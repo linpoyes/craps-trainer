@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="build" content="202610312214">
+<meta name="build" content="202610312222">
 <title>戰勝花旗骰</title>
 <meta name="description" content="花旗骰下注模擬：三種收法損益比較、長期期望值、下法與機率。">
 <meta property="og:title" content="戰勝花旗骰">
@@ -71,7 +71,7 @@ nav.tabs .in{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:r
 nav.tabs button{background:none;border:0;color:#CFC6B4;padding:12px 4px;font-size:17px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent}
 nav.tabs button[aria-selected="true"]{color:#F3E2B0;border-bottom-color:#E2B64A}
 
-main{max-width:1080px;margin:0 auto;padding:16px}
+main{max-width:1080px;margin:0 auto;padding:16px 16px 40px}
 section.pane{display:none}
 section.pane.on{display:block}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
@@ -79,8 +79,77 @@ h2{font-size:20px;margin:0 0 12px;letter-spacing:.04em}
 h3{font-size:18px;margin:18px 0 8px}
 
 /* 模擬：電腦左設定右結果；手機上下排 */
-.simgrid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
-@media (min-width:900px){ .simgrid{grid-template-columns:340px minmax(0,1fr)} .simgrid .cfg{position:sticky;top:64px;align-self:start} }
+.simgrid{display:grid;gap:0 16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:900px){
+  .simgrid{grid-template-columns:340px minmax(0,1fr);grid-template-areas:"cfg table" "cfg res"}
+  .simgrid .cfg{grid-area:cfg;position:sticky;top:64px;align-self:start;max-height:calc(100vh - 80px);overflow:auto}
+  .tablecard{grid-area:table} .rescol{grid-area:res}
+  .cfg summary{pointer-events:none} .cfg summary::after{display:none}
+}
+details.cfg summary>span:first-child{white-space:nowrap}
+details.cfg summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:10px;font-size:18px;font-weight:800;min-height:28px}
+details.cfg summary::-webkit-details-marker{display:none}
+details.cfg summary::after{content:"";margin-left:auto;flex:none;width:10px;height:10px;border-right:2.5px solid var(--text2);border-bottom:2.5px solid var(--text2);transform:rotate(45deg);align-self:center}
+details.cfg[open] summary::after{transform:rotate(-135deg)}
+details.cfg[open] summary{margin-bottom:14px}
+.cfgsum{font-size:14px;font-weight:600;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+details.cfg[open] .cfgsum{display:none}
+
+/* 牌桌：絨布永遠是綠色，文字白色，與深淺色模式無關 */
+.viewseg{margin-bottom:12px}
+.seg.viewseg{grid-template-columns:repeat(3,minmax(0,1fr))}
+.viewseg button{display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:14px;padding:6px 2px;line-height:1.25}
+.viewseg .dot{width:9px;height:9px}
+.felt{--fl:rgba(255,255,255,.82);background:radial-gradient(120% 90% at 50% 40%,#16784F,#0A4A31);border:7px solid #4A2F17;border-radius:20px;padding:10px;color:#fff;box-shadow:inset 0 0 0 2px #B8892B}
+.area{position:relative;border:2px solid var(--fl);border-radius:10px;background:transparent;color:#fff;font:inherit;cursor:pointer;container-type:inline-size;transition:box-shadow .2s,background .2s}
+.area.sel{background:rgba(255,255,255,.08)}
+.area.win{box-shadow:0 0 0 3px #4ADE80,0 0 18px rgba(74,222,128,.55);background:rgba(74,222,128,.14)}
+.area.lose{box-shadow:0 0 0 3px #FF5A5F;background:rgba(255,90,95,.14)}
+.nums{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+.nb{min-height:6.2em;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:6px 2px 8px}
+.nb .n{font-size:26px;font-weight:900;line-height:1.1;letter-spacing:-.02em}
+.nb .pay{font-size:min(12px,25cqi);opacity:.85;white-space:nowrap}
+.nb.pt .n{color:#FFE08A}
+.slot{display:flex;flex-direction:column;gap:3px;justify-content:center;margin-top:4px;min-height:2.2em;align-items:center}
+.chip{display:inline-flex;align-items:center;justify-content:center;min-width:2.3em;height:2.3em;padding:0 .35em;border-radius:1.15em;background:#E9BF4F;color:#1A1206;font-weight:900;font-size:min(14px,27cqi);border:2px dashed rgba(255,255,255,.9);box-shadow:0 2px 0 rgba(0,0,0,.35);font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip.odds{background:#F4F1EA}
+.chip.off{opacity:.45}
+.rb{position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);font-size:min(13px,24cqi);font-weight:900;padding:1px 7px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums;z-index:2}
+.rb.w{background:#22A35A;color:#fff} .rb.l{background:#D2353B;color:#fff}
+.puck{flex:none;width:26px;height:26px;border-radius:50%;background:#fff;color:#111;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;border:2px solid #111;box-shadow:0 2px 4px rgba(0,0,0,.4);z-index:3}
+.puck.offp{background:#111;color:#fff;border-color:#fff}
+.mid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:8px;margin:14px 0 12px}
+.dzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:7.5em;border:2px dashed rgba(255,255,255,.35);border-radius:12px;padding:6px}
+.dzone .dd{display:flex;align-items:center;gap:8px}
+.dzone .dd svg{width:46px;height:46px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.45))}
+.dzone .tot{font-size:34px;font-weight:900;line-height:1;min-width:1.3em;text-align:center}
+.dzone .st{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;opacity:.95}
+.dzone .st.seven{color:#FFB3B5}
+.dzone.shake .dd{animation:shake .35s ease}
+@keyframes shake{0%{transform:translate(0,0) rotate(0)}30%{transform:translate(-4px,-3px) rotate(-8deg)}60%{transform:translate(3px,2px) rotate(6deg)}100%{transform:translate(0,0) rotate(0)}}
+@media (prefers-reduced-motion:reduce){.dzone.shake .dd{animation:none}}
+.props{display:grid;gap:8px}
+.pb{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px 10px;min-height:3.6em}
+.pb .pn{font-weight:800;font-size:15px}
+.pb[data-p="seven"] .pn{color:#FFB3B5}
+.pb .pay{font-size:12px;opacity:.78}
+.pb .slot{min-height:0;margin-top:2px}
+.passline{display:flex;align-items:center;justify-content:center;gap:10px;min-height:3.4em;padding:6px 10px 10px;border-width:3px;cursor:default}
+.passline .pn{font-weight:900;letter-spacing:.22em;font-size:17px}
+.passline .slot,.pb .slot{flex-direction:row;margin:0}
+.tinfo{margin:12px 0 8px;min-height:3.2em}
+.tinfo .row1{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tinfo .k{font-weight:800;font-size:16px}
+.tinfo .net{font-size:22px;font-weight:900}
+.tinfo .ev{font-size:15px;color:var(--text2);line-height:1.5}
+.tctl{display:grid;grid-template-columns:44px minmax(0,1fr) 44px auto;gap:8px;align-items:center;margin-bottom:12px}
+.sbtn{min-height:44px;min-width:44px;border:1px solid var(--line);background:var(--soft);border-radius:10px;font-size:22px;font-weight:800;cursor:pointer;line-height:1}
+.sbtn.play{font-size:16px;padding:0 14px}
+.sbtn:disabled{opacity:.4}
+input[type=range]{width:100%;accent-color:var(--red);height:32px}
+.roll{cursor:pointer}
+.roll.cur{outline:3px solid var(--gold);outline-offset:-1px}
+@media (max-width:380px){ .nb .n{font-size:22px} .felt{padding:8px;border-width:5px} .nums{gap:4px} .dzone .dd svg{width:38px;height:38px} .dzone .tot{font-size:28px} }
 
 .field{margin-bottom:14px}
 .field>label,.field>.lb{display:block;font-weight:700;font-size:15px;color:var(--text2);margin-bottom:6px}
@@ -164,10 +233,6 @@ svg.chart text{fill:var(--muted);font-size:12px}
 .bars div.s7 i{background:var(--red)}
 .bars b{font-size:15px;color:var(--text)}
 
-footer{text-align:center;padding:26px 16px 40px;color:var(--muted)}
-footer img{width:72px;height:72px;border-radius:16px;display:block;margin:0 auto 8px}
-footer .brand{font-size:15px;white-space:nowrap}
-footer .brand b{color:var(--gold);font-weight:700}
 
 @media (max-width:360px){ main{padding:12px} .top h1{font-size:22px} .chips{grid-template-columns:repeat(3,1fr)} }
 </style>
@@ -185,7 +250,32 @@ footer .brand b{color:var(--gold);font-weight:700}
 <!-- ============ 模擬 ============ -->
 <section class="pane on" id="sim">
 <div class="simgrid">
-  <div class="card cfg">
+  <div class="card tablecard" id="tableCard">
+    <div class="seg viewseg" data-k="view">
+      <button data-v="0"><i class="dot" style="background:var(--s1)"></i>收彩金</button><button data-v="1"><i class="dot" style="background:var(--s2)"></i>中一次全收</button><button data-v="2"><i class="dot" style="background:var(--s3)"></i>一路不收</button></div>
+    <div class="felt" id="felt">
+      <div class="nums" id="tNums"></div>
+      <div class="mid">
+        <div class="dzone" id="tDice"></div>
+        <div class="props">
+          <button class="area pb" data-p="seven"><span class="pn">Any 7</span><span class="pay">4 : 1</span><span class="slot"></span></button>
+          <button class="area pb" data-p="craps"><span class="pn">Any Craps</span><span class="pay">7 : 1</span><span class="slot"></span></button>
+        </div>
+      </div>
+      <div class="area passline" data-p="pass"><span class="pn">PASS LINE</span><span class="slot"></span></div>
+    </div>
+    <div class="tinfo" id="tInfo"></div>
+    <div class="tctl">
+      <button class="sbtn" id="tPrev" aria-label="上一把">‹</button>
+      <input type="range" id="tRange" min="1" max="20" value="1" aria-label="第幾把">
+      <button class="sbtn" id="tNext" aria-label="下一把">›</button>
+      <button class="sbtn play" id="tPlay">播放</button>
+    </div>
+    <button class="btn" id="go">擲骰</button>
+  </div>
+
+  <details class="card cfg" id="cfgBox">
+    <summary><span>下注設定</span><span class="cfgsum" id="cfgSum"></span></summary>
     <div class="two">
       <div class="field"><label for="fPass">Pass Line</label><input id="fPass" class="amt num" inputmode="numeric" value="100"></div>
       <div class="field"><label for="fPlace">放注金額</label><input id="fPlace" class="amt num" inputmode="numeric" value="120"></div>
@@ -203,10 +293,9 @@ footer .brand b{color:var(--gold);font-weight:700}
       <button data-v="rand">隨機</button><button data-v="manual">自行輸入</button></div></div>
     <div class="field" id="nF"><label for="fN">把數</label><input id="fN" class="amt num" inputmode="numeric" value="20"></div>
     <div class="field" id="manF" hidden><label for="fMan">每把點數</label><textarea id="fMan" class="num" placeholder="4 10 7 7 10 9 11 …"></textarea><div class="err" id="manErr" hidden></div></div>
-    <button class="btn" id="go">擲骰</button>
-  </div>
+  </details>
 
-  <div>
+  <div class="rescol">
     <div class="card">
       <h2 id="resTitle">20 把結果</h2>
       <div class="tiles" id="tiles"></div>
@@ -350,13 +439,13 @@ footer .brand b{color:var(--gold);font-weight:700}
 </section>
 </main>
 
-<footer><img src="badge.png" alt=""><div class="brand"><b>欣群企業</b> ｜ 欣瀚資訊</div></footer>
+
 
 <script>
 "use strict";
 // ---------- 設定（localStorage 一律 try/catch；不可用 window.storage，那是 Artifact 專用，在瀏覽器裡不存在） ----------
 const KEY = "craps-trainer";
-const DEF = {pass:100, place:120, odds:"0", nums:[6,8], skip:"1", ins:"none", insAmt:10, src:"rand", n:20, man:"", runs:"100000", rolls:null, tab:"sim"};
+const DEF = {view:"0", cur:1, cfgOpen:null, pass:100, place:120, odds:"0", nums:[6,8], skip:"1", ins:"none", insAmt:10, src:"rand", n:20, man:"", runs:"100000", rolls:null, tab:"sim"};
 let cfg = Object.assign({}, DEF);
 try { Object.assign(cfg, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {} };
@@ -388,15 +477,17 @@ function play(rolls, c, mode, quiet) {
   for (const s of rolls) {
     const com = quiet ? null : [], pl = quiet ? null : [];
     const wasPoint = point;
+    if (!point && !pass) { pass = c.pass; pocket -= pass; }
+    const hit = quiet ? null : {place:{}};
+    const pre = quiet ? null : {pass, odds, place:Object.assign({}, place), point, ins:(c.insAmt && ((c.ins === "craps" && !point) || (c.ins === "seven" && point))) ? c.insAmt : 0};
     if (!point) {
-      if (!pass) { pass = c.pass; pocket -= pass; }
       if (c.ins === "craps" && c.insAmt) {
         pocket -= c.insAmt;
-        if (s === 2 || s === 3 || s === 12) { pocket += c.insAmt * 8; com && com.push("Any Craps " + fmt(c.insAmt * 7)); }
-        else com && com.push("Any Craps " + fmt(-c.insAmt));
+        if (s === 2 || s === 3 || s === 12) { pocket += c.insAmt * 8; com && com.push("Any Craps " + fmt(c.insAmt * 7)); hit && (hit.craps = c.insAmt * 7); }
+        else { com && com.push("Any Craps " + fmt(-c.insAmt)); hit && (hit.craps = -c.insAmt); }
       }
-      if (s === 7 || s === 11) { pocket += pass * 2; com && com.push("Pass " + fmt(pass)); pass = 0; }
-      else if (s === 2 || s === 3 || s === 12) { com && com.push("Pass " + fmt(-pass)); pass = 0; }
+      if (s === 7 || s === 11) { pocket += pass * 2; com && com.push("Pass " + fmt(pass)); hit && (hit.pass = pass); pass = 0; }
+      else if (s === 2 || s === 3 || s === 12) { com && com.push("Pass " + fmt(-pass)); hit && (hit.pass = -pass); pass = 0; }
       else {
         point = s; com && com.push("點數 " + s);
         odds = Math.floor(pass * c.odds); pocket -= odds;
@@ -410,17 +501,19 @@ function play(rolls, c, mode, quiet) {
     } else {
       if (c.ins === "seven" && c.insAmt) {
         pocket -= c.insAmt;
-        if (s === 7) { pocket += c.insAmt * 5; com && com.push("Any 7 " + fmt(c.insAmt * 4)); }
-        else com && com.push("Any 7 " + fmt(-c.insAmt));
+        if (s === 7) { pocket += c.insAmt * 5; com && com.push("Any 7 " + fmt(c.insAmt * 4)); hit && (hit.seven = c.insAmt * 4); }
+        else { com && com.push("Any 7 " + fmt(-c.insAmt)); hit && (hit.seven = -c.insAmt); }
       }
       if (s === 7) {
         com && com.push("七出 Pass " + fmt(-pass) + (odds ? "、賠率注 " + fmt(-odds) : ""));
         const lost = Object.values(place).reduce((a, b) => a + b, 0);
         if (pl && lost) pl.push("放注 " + fmt(-lost));
+        if (hit) { hit.pass = -pass; if (odds) hit.odds = -odds; for (const k in place) hit.place[k] = -place[k]; }
         pass = 0; odds = 0; point = 0; place = {};
       } else {
         if (s in place) {
           const bet = place[s], win = Math.floor(bet * PLACE_PAY[s]);
+          if (hit) hit.place[s] = win;
           if (mode === "collect") { pocket += win; pl && pl.push(s + " 中 " + fmt(win)); }
           else if (mode === "down") { pocket += win + bet; delete place[s]; pl && pl.push(s + " 中 " + fmt(win) + "・收回"); }
           else {
@@ -431,6 +524,7 @@ function play(rolls, c, mode, quiet) {
         if (s === point) {
           const ow = Math.floor(odds * ODDS_PAY[s]);
           pocket += pass * 2 + odds + ow;
+          if (hit) { hit.pass = pass; if (odds) hit.odds = ow; }
           com && com.push("Pass " + fmt(pass) + (odds ? "、賠率注 " + fmt(ow) : ""));
           pass = 0; odds = 0; point = 0;
         }
@@ -439,7 +533,7 @@ function play(rolls, c, mode, quiet) {
     let net = pocket + pass + odds;
     for (const k in place) net += place[k];
     if (net > hi) hi = net; if (net < lo) lo = net;
-    out && out.push({s, wasPoint, com, pl, net});
+    out && out.push({s, wasPoint, com, pl, net, pre, hit});
   }
   let net = pocket + pass + odds;
   for (const k in place) net += place[k];
@@ -477,11 +571,13 @@ function render() {
   $("#legend").innerHTML = MODES.map(m => `<span><i class="dot" style="background:${m.c}"></i>${m.name}</span>`).join("");
   drawChart(res, sums);
 
+  last = {res, rolls};
+  drawTable();
   $("#rolls").innerHTML = rolls.map((r, j) => {
     const st = res[0].steps[j];
     const seven = st.wasPoint && st.s === 7;
     const ph = st.wasPoint ? `<span class="ph on">點數 ${st.wasPoint}</span>` : `<span class="ph">出場</span>`;
-    return `<div class="roll${seven ? " seven" : ""}">
+    return `<div class="roll${seven ? " seven" : ""}${j + 1 === cfg.cur ? " cur" : ""}" data-j="${j + 1}">
       <div class="i num">${j + 1}</div>
       <div class="dice">${die(r[0])}${die(r[1])}<span class="sum num">${st.s}</span></div>
       <div class="ev">${ph}${st.com.join("　")}</div>
@@ -489,6 +585,84 @@ function render() {
     </div>`;
   }).join("");
 }
+
+// ---------- 牌桌 ----------
+// 顯示「第 cur 把擲出當下」桌上的注（pre）與這一把的結算（hit），以選定的收法為準。
+let last = null, timer = null;
+const PAYTXT = {4:"9:5", 5:"7:5", 6:"7:6", 8:"7:6", 9:"7:5", 10:"9:5"};
+const chipTxt = v => v >= 10000 ? (Math.floor(v / 1000) / 10) + "萬" : v.toLocaleString("en-US");
+const chip = (v, k) => `<span class="chip ${k || ""}">${chipTxt(v)}</span>`;
+const rb = v => v ? `<span class="rb ${v > 0 ? "w" : "l"}">${fmt(v)}</span>` : "";
+function drawTable() {
+  if (!last) return;
+  const n = last.rolls.length;
+  cfg.cur = Math.max(1, Math.min(n, cfg.cur || 1));
+  const vi = +cfg.view, st = last.res[vi].steps[cfg.cur - 1], r = last.rolls[cfg.cur - 1];
+  const pre = st.pre, hit = st.hit;
+  const sel = new Set(cfg.nums);
+  $("#tNums").innerHTML = [4, 5, 6, 8, 9, 10].map(x => {
+    const h = hit.place[x], cl = ["area", "nb", sel.has(x) ? "sel" : "", pre.point === x ? "pt" : "", h > 0 ? "win" : h < 0 ? "lose" : ""].join(" ");
+    return `<button class="${cl}" data-n="${x}" aria-pressed="${sel.has(x)}"><span class="n">${x}</span><span class="pay">${PAYTXT[x]}</span><span class="slot">${pre.point === x ? '<span class="puck">ON</span>' : ""}${pre.place[x] ? chip(pre.place[x], pre.point ? "" : "off") : ""}</span>${rb(h)}</button>`;
+  }).join("");
+  const seven = pre.point && st.s === 7;
+  const state = pre.point ? `點數 ${pre.point}` : `<span class="puck offp">OFF</span>出場擲`;
+  const dz = $("#tDice");
+  dz.innerHTML = `<div class="dd">${die(r[0])}${die(r[1])}<span class="tot num">${st.s}</span></div><div class="st${seven ? " seven" : ""}">${seven ? "七出" : state}</div>`;
+  dz.classList.remove("shake"); void dz.offsetWidth; if (timer) dz.classList.add("shake");
+  const ins = {seven:cfg.ins === "seven", craps:cfg.ins === "craps"};
+  document.querySelectorAll(".pb").forEach(b => {
+    const k = b.dataset.p, h = hit[k];
+    b.className = "area pb" + (ins[k] ? " sel" : "") + (h > 0 ? " win" : h < 0 ? " lose" : "");
+    b.setAttribute("aria-pressed", String(ins[k]));
+    b.querySelector(".slot").innerHTML = pre.ins && ins[k] ? chip(pre.ins) : "";
+    b.querySelectorAll(".rb").forEach(e => e.remove()); b.insertAdjacentHTML("beforeend", rb(h));
+  });
+  const pl = $(".passline");
+  const ph = hit.pass, oh = hit.odds;
+  pl.className = "area passline" + (ph > 0 ? " win" : ph < 0 ? " lose" : "");
+  pl.querySelector(".slot").innerHTML = (pre.pass ? chip(pre.pass) : "") + (pre.odds ? chip(pre.odds, "odds") : "");
+  pl.querySelectorAll(".rb").forEach(e => e.remove()); pl.insertAdjacentHTML("beforeend", rb((ph || 0) + (oh || 0)));
+  const m = MODES[vi];
+  $("#tInfo").innerHTML = `<div class="row1"><span class="k num">第 ${cfg.cur}／${n} 把</span><span class="net num ${cls(st.net)}">${fmt(st.net)}</span></div><div class="ev">${st.com.concat(st.pl).join("　")}</div>`;
+  const rg = $("#tRange"); rg.max = n; rg.value = cfg.cur;
+  $("#tPrev").disabled = cfg.cur <= 1; $("#tNext").disabled = cfg.cur >= n;
+  $("#tPlay").textContent = timer ? "暫停" : "播放";
+  document.querySelectorAll(".roll.cur").forEach(e => e.classList.remove("cur"));
+  const row = document.querySelector(`.roll[data-j="${cfg.cur}"]`); row && row.classList.add("cur");
+}
+function goTo(k, keepPlay) {
+  if (!keepPlay) stopPlay();
+  cfg.cur = k; save(); drawTable();
+}
+function stopPlay() { if (timer) { clearInterval(timer); timer = null; $("#tPlay").textContent = "播放"; } }
+function startPlay(from) {
+  stopPlay();
+  if (from) cfg.cur = from; else if (cfg.cur >= last.rolls.length) cfg.cur = 1;
+  timer = setInterval(() => {
+    if (cfg.cur >= last.rolls.length) { stopPlay(); drawTable(); return; }
+    goTo(cfg.cur + 1, true);
+  }, 900);
+  drawTable();
+}
+$("#tPrev").addEventListener("click", () => goTo(cfg.cur - 1));
+$("#tNext").addEventListener("click", () => goTo(cfg.cur + 1));
+$("#tRange").addEventListener("input", e => goTo(+e.target.value));
+$("#tPlay").addEventListener("click", () => timer ? (stopPlay(), drawTable()) : startPlay());
+$("#rolls").addEventListener("click", e => {
+  const row = e.target.closest(".roll"); if (!row) return;
+  goTo(+row.dataset.j);
+  $("#tableCard").scrollIntoView({behavior:"smooth", block:"start"});
+});
+// 點牌桌直接改下注：數字＝放注數字、Any 7／Any Craps＝保險
+$("#tNums").addEventListener("click", e => {
+  const b = e.target.closest(".nb"); if (!b) return;
+  const v = +b.dataset.n;
+  cfg.nums = cfg.nums.includes(v) ? cfg.nums.filter(x => x !== v) : cfg.nums.concat(v);
+  save(); syncUI(); render();
+});
+document.querySelectorAll(".pb").forEach(b => b.addEventListener("click", () => {
+  cfg.ins = cfg.ins === b.dataset.p ? "none" : b.dataset.p; save(); syncUI(); render();
+}));
 
 // 走勢圖：單一 y 軸、2px 線、十字線＋提示框；尾端直接標名稱（三條線以內）
 let chartData = null;
@@ -562,13 +736,15 @@ function syncUI() {
   $("#insAmtF").hidden = cfg.ins === "none";
   $("#nF").hidden = cfg.src === "manual"; $("#manF").hidden = cfg.src !== "manual";
   $("#go").textContent = cfg.src === "manual" ? "計算" : "擲骰";
+  $("#cfgSum").textContent = `Pass ${settings().pass}・${cfg.odds === "0" ? "無賠率注" : "賠率 " + cfg.odds + " 倍"}・放 ${cfg.nums.slice().sort((a, b) => a - b).join("、") || "無"}・${cfg.ins === "none" ? "無保險" : cfg.ins === "craps" ? "Any Craps" : "Any 7"}`;
   const c = settings();
   $("#longCfg").textContent = `每場 ${toInt(cfg.n, 20)} 把・Pass ${c.pass}・賠率注 ${c.odds ? c.odds + " 倍" : "不下"}・放注 ${c.nums.join("、") || "無"}・保險 ${c.ins === "none" ? "不買" : (c.ins === "craps" ? "Any Craps " : "Any 7 ") + c.insAmt}`;
 }
 document.querySelectorAll(".seg[data-k]").forEach(seg => seg.addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   cfg[seg.dataset.k] = b.dataset.v; save(); syncUI();
-  if (seg.dataset.k !== "runs" && seg.dataset.k !== "src") render();
+  if (seg.dataset.k === "view") drawTable();
+  else if (seg.dataset.k !== "runs" && seg.dataset.k !== "src") render();
 }));
 $("#fNums").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
@@ -596,10 +772,11 @@ $("#go").addEventListener("click", () => {
   $("#manErr").hidden = true;
   if (cfg.src === "manual") {
     const p = parseManual(cfg.man);
-    if (p.err) { $("#manErr").textContent = p.err; $("#manErr").hidden = false; btn.disabled = false; return; }
+    if (p.err) { $("#manErr").textContent = p.err; $("#manErr").hidden = false; $("#cfgBox").open = true; btn.disabled = false; return; }
     cfg.rolls = p.rolls;
   } else cfg.rolls = randRolls(Math.min(500, Math.max(1, toInt(cfg.n, 20))));
-  save(); render();
+  cfg.cur = 1; save(); render();
+  startPlay(1);
   setTimeout(() => { btn.disabled = false; }, 250);
 });
 
@@ -661,8 +838,14 @@ function showTab(t) {
 document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => { showTab(b.dataset.t); scrollTo(0, 0); }));
 
 if (!cfg.rolls || !cfg.rolls.length) cfg.rolls = randRolls(20);
+// 設定區：電腦版固定展開；手機預設收合（牌桌先出現），之後記住使用者的選擇
+const cfgBox = $("#cfgBox"), wide = matchMedia("(min-width:900px)");
+cfgBox.open = wide.matches || cfg.cfgOpen === true;
+cfgBox.addEventListener("toggle", () => { if (!wide.matches) { cfg.cfgOpen = cfgBox.open; save(); } });
+wide.addEventListener("change", () => { cfgBox.open = wide.matches || cfg.cfgOpen === true; });
 syncUI();
 showTab(document.getElementById(cfg.tab) ? cfg.tab : "sim");
+document.addEventListener("visibilitychange", () => { if (document.hidden) { stopPlay(); drawTable(); } });
 let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (cfg.tab === "sim") render(); }, 150); });
 
 // ---------- 自動換新版 ----------
