@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="build" content="202610312229">
+<meta name="build" content="202610312241">
 <title>戰勝花旗骰</title>
 <meta name="description" content="花旗骰下注模擬：三種收注方式損益比較、長期期望值、策略與機率。">
 <meta property="og:title" content="戰勝花旗骰">
@@ -746,6 +746,13 @@ function niceStep(raw) {
 }
 
 // ---------- 控制項 ----------
+// 放注摘要寫實際下注額（6/8 取 6 的倍數），同額的號碼併成一組：「5、9 各 100・6、8 各 96」
+function placeTxt(c) {
+  if (!c.nums.length) return "無";
+  const g = new Map();
+  c.nums.forEach(n => { const a = unitAmt(n, c.place); g.set(a, (g.get(a) || []).concat(n)); });
+  return [...g].map(([a, ns]) => ns.join("、") + (ns.length > 1 ? " 各 " : " ") + a).join("・");
+}
 function syncUI() {
   document.querySelectorAll(".seg[data-k]").forEach(seg => {
     seg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === String(cfg[seg.dataset.k]))));
@@ -755,9 +762,9 @@ function syncUI() {
   $("#insAmtF").hidden = cfg.ins === "none";
   $("#nF").hidden = cfg.src === "manual"; $("#manF").hidden = cfg.src !== "manual";
   $("#go").textContent = cfg.src === "manual" ? "計算" : "擲骰";
-  $("#cfgSum").textContent = `Pass ${settings().pass}・${cfg.odds === "0" ? "無賠率注" : "賠率注 " + cfg.odds + " 倍"}・放注 ${cfg.nums.slice().sort((a, b) => a - b).join("、") || "無"}・${cfg.ins === "none" ? "無保險注" : cfg.ins === "craps" ? "Any Craps" : "Any 7"}`;
+  $("#cfgSum").textContent = `Pass ${settings().pass}・${cfg.odds === "0" ? "無賠率注" : "賠率注 " + cfg.odds + " 倍"}・放注 ${placeTxt(settings())}・${cfg.ins === "none" ? "無保險注" : (cfg.ins === "craps" ? "Any Craps " : "Any 7 ") + settings().insAmt}`;
   const c = settings();
-  $("#longCfg").textContent = `每場 ${toInt(cfg.n, 20)} 擲・Pass ${c.pass}・賠率注 ${c.odds ? c.odds + " 倍" : "不下"}・放注 ${c.nums.join("、") || "無"}・保險注 ${c.ins === "none" ? "無" : (c.ins === "craps" ? "Any Craps " : "Any 7 ") + c.insAmt}`;
+  $("#longCfg").textContent = `每場 ${toInt(cfg.n, 20)} 擲・Pass ${c.pass}・賠率注 ${c.odds ? c.odds + " 倍" : "不下"}・放注 ${placeTxt(c)}・保險注 ${c.ins === "none" ? "無" : (c.ins === "craps" ? "Any Craps " : "Any 7 ") + c.insAmt}`;
 }
 document.querySelectorAll(".seg[data-k]").forEach(seg => seg.addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
