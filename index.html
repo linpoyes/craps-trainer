@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="build" content="0">
+<title>戰勝花旗骰</title>
+<meta name="description" content="花旗骰下注模擬：三種收法損益比較、長期期望值、下法與機率。">
+<meta property="og:title" content="戰勝花旗骰">
+<meta property="og:site_name" content="戰勝花旗骰">
+<meta property="og:description" content="花旗骰下注模擬：三種收法損益比較、長期期望值、下法與機率。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://linpoyes.github.io/craps-trainer/">
+<meta property="og:image" content="https://linpoyes.github.io/craps-trainer/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0c0a08">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="戰勝花旗骰">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="icon" type="image/png" href="favicon.png?v=1">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
+<link rel="manifest" href="manifest.webmanifest?v=1">
+<style>
+/* 識讀優先：內文 17px、高對比、數字等寬。顏色一律走 token，深色模式另外選色不是自動反轉。 */
+:root{
+  color-scheme:light;
+  --bg:#F4F1EA; --card:#FFFFFF; --line:#DDD6C8; --soft:#F7F4EE;
+  --text:#14110D; --text2:#4A4540; --muted:#6B655D;
+  --gold:#8A6A12; --red:#B3121B;
+  --good:#0F7B3F; --bad:#C0262D;
+  --s1:#2a78d6; --s2:#1baf7a; --s3:#eb6834;   /* 收彩金／中一次全收／一路不收，驗證過的前三格 */
+  --grid:#E6E0D4;
+  --head:#0C0A08; --headText:#F3E2B0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E0C0A; --card:#1A1714; --line:#38322B; --soft:#221E1A;
+    --text:#F5F1E8; --text2:#CFC8BC; --muted:#A39B8E;
+    --gold:#E2B64A; --red:#E5484D;
+    --good:#4CC38A; --bad:#FF6B6B;
+    --s1:#3987e5; --s2:#199e70; --s3:#d95926;
+    --grid:#2C2721;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E0C0A; --card:#1A1714; --line:#38322B; --soft:#221E1A;
+  --text:#F5F1E8; --text2:#CFC8BC; --muted:#A39B8E;
+  --gold:#E2B64A; --red:#E5484D;
+  --good:#4CC38A; --bad:#FF6B6B;
+  --s1:#3987e5; --s2:#199e70; --s3:#d95926;
+  --grid:#2C2721;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:17px/1.6 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif}
+.num{font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+
+header.top{background:var(--head);color:var(--headText);border-bottom:2px solid #8A6A12}
+.top .in{max-width:1080px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.top img{width:52px;height:52px;border-radius:12px;flex:none}
+.top h1{margin:0;font-size:26px;letter-spacing:.12em;font-weight:800;white-space:nowrap}
+
+nav.tabs{position:sticky;top:0;z-index:5;background:var(--head);border-bottom:1px solid #2A241D}
+nav.tabs .in{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+nav.tabs button{background:none;border:0;color:#CFC6B4;padding:12px 4px;font-size:17px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent}
+nav.tabs button[aria-selected="true"]{color:#F3E2B0;border-bottom-color:#E2B64A}
+
+main{max-width:1080px;margin:0 auto;padding:16px}
+section.pane{display:none}
+section.pane.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+h2{font-size:20px;margin:0 0 12px;letter-spacing:.04em}
+h3{font-size:18px;margin:18px 0 8px}
+
+/* 模擬：電腦左設定右結果；手機上下排 */
+.simgrid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:900px){ .simgrid{grid-template-columns:340px minmax(0,1fr)} .simgrid .cfg{position:sticky;top:64px;align-self:start} }
+
+.field{margin-bottom:14px}
+.field>label,.field>.lb{display:block;font-weight:700;font-size:15px;color:var(--text2);margin-bottom:6px}
+.seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,4.2em),1fr));gap:6px}
+.seg button,.chips button{min-height:44px;border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:6px 4px;font-weight:700;cursor:pointer}
+.seg button[aria-pressed="true"],.chips button[aria-pressed="true"]{background:var(--text);color:var(--card);border-color:var(--text)}
+.chips{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.chips button{font-size:19px}
+input.amt,textarea{width:100%;min-height:44px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px;font-size:18px}
+textarea{min-height:76px;resize:vertical;line-height:1.5}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,8em),1fr));gap:12px}
+.btn{display:block;width:100%;min-height:52px;border:0;border-radius:12px;background:var(--red);color:#fff;font-size:19px;font-weight:800;letter-spacing:.1em;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:default}
+.err{color:var(--bad);font-weight:700;font-size:15px;margin-top:6px}
+
+/* 結果三格 */
+.tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,9.5em),1fr))}
+.tile{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--card)}
+.tile{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 10px}
+.tile .nm{grid-column:1;display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;color:var(--text2)}
+.dot{width:12px;height:12px;border-radius:50%;flex:none;display:inline-block}
+.tile .big{grid-column:2;grid-row:1/3;font-size:30px;font-weight:800;line-height:1.2;text-align:right}
+.tile .sub{grid-column:1}
+.tile .kv{grid-column:1/-1}
+@media (min-width:900px){.tile{display:block}.tile .big{text-align:left;margin-top:4px}}
+.tile .sub{font-size:14px;color:var(--muted)}
+.pos{color:var(--good)} .neg{color:var(--bad)} .zero{color:var(--text2)}
+
+/* 走勢圖 */
+.chartbox{position:relative;margin-top:14px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:15px;color:var(--text2);margin-bottom:6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+svg.chart{display:block;width:100%;height:auto;touch-action:pan-y}
+svg.chart text{fill:var(--muted);font-size:12px}
+.tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.18);min-width:9.5em;white-space:nowrap}
+.tip b{display:block;margin-bottom:2px}
+.tip div{display:flex;align-items:center;gap:6px;justify-content:space-between}
+.tip div span{display:inline-flex;align-items:center;gap:6px}
+
+/* 每一把 */
+.rolls{display:flex;flex-direction:column;gap:8px}
+.roll{display:grid;grid-template-columns:2.2em auto minmax(0,1fr);gap:4px 10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card)}
+.roll.seven{border-color:var(--bad);box-shadow:inset 4px 0 0 var(--bad)}
+.roll .i{font-weight:700;color:var(--muted);font-size:15px}
+.roll .dice{display:flex;align-items:center;gap:4px}
+.roll .sum{font-size:24px;font-weight:800;min-width:1.4em;text-align:right;margin-left:4px}
+.roll .ev{font-size:15px;line-height:1.45}
+.ph{display:inline-block;font-size:13px;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--text2);margin-right:6px;white-space:nowrap}
+.ph.on{border-color:var(--gold);color:var(--gold)}
+.bals{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;border-top:1px dashed var(--line);padding-top:6px}
+.bal{font-size:14px;min-width:0}
+.bal .v{font-size:17px;font-weight:800;display:flex;align-items:center;gap:6px}
+.bal .t{color:var(--muted);font-size:13px;line-height:1.35}
+
+/* 表格 */
+.tbl{width:100%;border-collapse:collapse;font-size:16px}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left;vertical-align:top}
+.tbl th{background:var(--head);color:#F3E2B0;font-weight:700;font-size:15px}
+.tbl td.r,.tbl th.r{text-align:right}
+.tbl th,.tbl.num td:first-child{white-space:nowrap}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tag{display:inline-block;font-size:13px;font-weight:700;padding:0 8px;border-radius:999px;white-space:nowrap}
+.tag.ok{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
+.tag.no{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+.tag.mid{background:var(--soft);color:var(--text2);border:1px solid var(--line)}
+.flow{border-left:4px solid var(--gold);padding:4px 0 4px 14px;margin:8px 0}
+.flow p{margin:4px 0}
+.key{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:12px 0;font-weight:700}
+
+/* 長期 */
+.kv{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:15px;margin-top:6px}
+.kv dt{color:var(--text2)} .kv dd{margin:0;text-align:right;font-weight:700}
+.prog{height:6px;background:var(--soft);border-radius:3px;overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;background:var(--gold);width:0}
+.grouph{font-weight:800;margin:14px 0 8px;color:var(--text2)}
+
+/* 機率長條 */
+.bars{display:grid;grid-template-columns:repeat(11,1fr);gap:4px;align-items:end;height:170px;margin-top:8px}
+.bars div{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:13px;color:var(--text2)}
+.bars i{display:block;width:100%;background:var(--text2);border-radius:4px 4px 0 0;margin-top:2px}
+.bars div.s7 i{background:var(--red)}
+.bars b{font-size:15px;color:var(--text)}
+
+footer{text-align:center;padding:26px 16px 40px;color:var(--muted)}
+footer img{width:72px;height:72px;border-radius:16px;display:block;margin:0 auto 8px}
+footer .brand{font-size:15px;white-space:nowrap}
+footer .brand b{color:var(--gold);font-weight:700}
+
+@media (max-width:360px){ main{padding:12px} .top h1{font-size:22px} .chips{grid-template-columns:repeat(3,1fr)} }
+</style>
+</head>
+<body>
+<header class="top"><div class="in"><img src="badge.png" alt=""><h1>戰勝花旗骰</h1></div></header>
+<nav class="tabs" role="tablist"><div class="in">
+  <button role="tab" data-t="sim" aria-selected="true">模擬</button>
+  <button role="tab" data-t="long" aria-selected="false">長期</button>
+  <button role="tab" data-t="guide" aria-selected="false">下法</button>
+  <button role="tab" data-t="prob" aria-selected="false">機率</button>
+</div></nav>
+
+<main>
+<!-- ============ 模擬 ============ -->
+<section class="pane on" id="sim">
+<div class="simgrid">
+  <div class="card cfg">
+    <div class="two">
+      <div class="field"><label for="fPass">Pass Line</label><input id="fPass" class="amt num" inputmode="numeric" value="100"></div>
+      <div class="field"><label for="fPlace">放注金額</label><input id="fPlace" class="amt num" inputmode="numeric" value="120"></div>
+    </div>
+    <div class="field"><span class="lb">賠率注</span><div class="seg" data-k="odds">
+      <button data-v="0">不下</button><button data-v="1">1 倍</button><button data-v="2">2 倍</button><button data-v="3">3 倍</button></div></div>
+    <div class="field"><span class="lb">放注數字</span><div class="chips" id="fNums">
+      <button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button><button data-v="8">8</button><button data-v="9">9</button><button data-v="10">10</button></div></div>
+    <div class="field"><span class="lb">與點數相同的數字</span><div class="seg" data-k="skip">
+      <button data-v="1">不放</button><button data-v="0">照放</button></div></div>
+    <div class="field"><span class="lb">保險</span><div class="seg" data-k="ins">
+      <button data-v="none">不買</button><button data-v="craps">Any Craps</button><button data-v="seven">Any 7</button></div></div>
+    <div class="field" id="insAmtF"><label for="fIns">保險金額</label><input id="fIns" class="amt num" inputmode="numeric" value="10"></div>
+    <div class="field"><span class="lb">骰子結果</span><div class="seg" data-k="src">
+      <button data-v="rand">隨機</button><button data-v="manual">自行輸入</button></div></div>
+    <div class="field" id="nF"><label for="fN">把數</label><input id="fN" class="amt num" inputmode="numeric" value="20"></div>
+    <div class="field" id="manF" hidden><label for="fMan">每把點數</label><textarea id="fMan" class="num" placeholder="4 10 7 7 10 9 11 …"></textarea><div class="err" id="manErr" hidden></div></div>
+    <button class="btn" id="go">擲骰</button>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2 id="resTitle">20 把結果</h2>
+      <div class="tiles" id="tiles"></div>
+      <div class="chartbox" id="chartbox">
+        <div class="legend" id="legend"></div>
+        <svg class="chart" id="chart" role="img" aria-label="三種收法每把累計損益"></svg>
+        <div class="tip" id="tip" hidden></div>
+      </div>
+    </div>
+    <div class="rolls" id="rolls"></div>
+  </div>
+</div>
+</section>
+
+<!-- ============ 長期 ============ -->
+<section class="pane" id="long">
+  <div class="card">
+    <h2>長期期望值</h2>
+    <div class="field"><span class="lb">場數</span><div class="seg" data-k="runs">
+      <button data-v="10000">1 萬場</button><button data-v="100000">10 萬場</button></div></div>
+    <div class="sub" id="longCfg" style="color:var(--muted);font-size:15px;margin-bottom:10px"></div>
+    <button class="btn" id="goLong">開始計算</button>
+    <div class="prog" id="prog" hidden><i></i></div>
+  </div>
+  <div id="longOut"></div>
+</section>
+
+<!-- ============ 下法 ============ -->
+<section class="pane" id="guide">
+  <div class="card">
+    <h2>一局的流程</h2>
+    <div class="flow">
+      <p><b>出場擲</b>（尚無點數）</p>
+      <p>7、11 → Pass 贏</p>
+      <p>2、3、12 → Pass 輸</p>
+      <p>4、5、6、8、9、10 → 成為點數</p>
+    </div>
+    <div class="flow">
+      <p><b>有點數後</b></p>
+      <p>先擲出點數 → Pass 贏，回到出場擲</p>
+      <p>先擲出 7 → 七出，Pass、賠率注、放注全輸</p>
+      <p>其他數字 → 只結算放注</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>開始前（出場擲）</h2>
+    <div class="scroll"><table class="tbl num">
+      <tr><th>結果</th><th class="r">機率</th><th>Pass</th><th>Don't Pass</th></tr>
+      <tr><td>7、11</td><td class="r">22.2%</td><td><span class="tag ok">贏</span></td><td><span class="tag no">輸</span></td></tr>
+      <tr><td>2、3</td><td class="r">8.3%</td><td><span class="tag no">輸</span></td><td><span class="tag ok">贏</span></td></tr>
+      <tr><td>12</td><td class="r">2.8%</td><td><span class="tag no">輸</span></td><td><span class="tag mid">平手</span></td></tr>
+      <tr><td>點數</td><td class="r">66.7%</td><td colspan="2">進入下一階段</td></tr>
+    </table></div>
+    <h3>下注選擇</h3>
+    <div class="scroll"><table class="tbl">
+      <tr><th>下注</th><th>建議</th><th>理由</th></tr>
+      <tr><td><b>Pass Line</b></td><td><span class="tag ok">主注</span></td><td>莊家優勢 1.41%；出場擲贏的機率是輸的兩倍</td></tr>
+      <tr><td>Don't Pass</td><td><span class="tag mid">可</span></td><td>莊家優勢 1.36%</td></tr>
+      <tr><td>Any Craps</td><td><span class="tag no">不建議</span></td><td>莊家優勢 11.1%</td></tr>
+      <tr><td>賠率注、Come</td><td><span class="tag mid">不可下</span></td><td>須有點數</td></tr>
+      <tr><td>放注</td><td><span class="tag mid">不作用</span></td><td>出場擲時放注關閉，擲出 7 不會輸掉</td></tr>
+    </table></div>
+    <div class="key">開始前只下 Pass。</div>
+  </div>
+
+  <div class="card">
+    <h2>開始後（有點數）</h2>
+    <div class="scroll"><table class="tbl num">
+      <tr><th>點數</th><th class="r">先出點數</th><th class="r">先出 7</th><th class="r">賠率注賠率</th></tr>
+      <tr><td>4、10</td><td class="r">33.3%</td><td class="r">66.7%</td><td class="r">2 : 1</td></tr>
+      <tr><td>5、9</td><td class="r">40.0%</td><td class="r">60.0%</td><td class="r">3 : 2</td></tr>
+      <tr><td>6、8</td><td class="r">45.5%</td><td class="r">54.5%</td><td class="r">6 : 5</td></tr>
+    </table></div>
+    <h3>下注選擇</h3>
+    <div class="scroll"><table class="tbl">
+      <tr><th>下注</th><th>建議</th><th>理由</th></tr>
+      <tr><td><b>賠率注</b></td><td><span class="tag ok">優先</span></td><td>莊家優勢 0%，照真實機率賠</td></tr>
+      <tr><td><b>放注 6、8</b></td><td><span class="tag ok">建議</span></td><td>莊家優勢 1.52%；與點數相同的不放</td></tr>
+      <tr><td>Come</td><td><span class="tag mid">可</span></td><td>等同再開一個 Pass</td></tr>
+      <tr><td>放注 5、9</td><td><span class="tag mid">勉強</span></td><td>莊家優勢 4.0%</td></tr>
+      <tr><td>放注 4、10</td><td><span class="tag no">不建議</span></td><td>莊家優勢 6.67%</td></tr>
+      <tr><td>Any 7</td><td><span class="tag no">不建議</span></td><td>莊家優勢 16.7%，全場最高</td></tr>
+      <tr><td>硬路、單把押注</td><td><span class="tag no">不建議</span></td><td>莊家優勢 9–16%</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h2>建議下法（單位 100）</h2>
+    <div class="scroll"><table class="tbl">
+      <tr><th>階段</th><th>動作</th></tr>
+      <tr><td>開始前</td><td>Pass 100</td></tr>
+      <tr><td>點數出現</td><td>賠率注 200（2 倍）；放注 6、8 各 120，與點數相同的不放</td></tr>
+      <tr><td>放注中獎</td><td>收彩金或中一次全收</td></tr>
+      <tr><td>點數中</td><td>Pass 與賠率注派彩，回到開始前</td></tr>
+      <tr><td>七出</td><td>全數輸掉，回到開始前</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h2>三種收法</h2>
+    <div class="scroll"><table class="tbl">
+      <tr><th>收法</th><th>放注中獎時</th></tr>
+      <tr><td><span class="dot" style="background:var(--s1)"></span> <b>收彩金</b></td><td>彩金收回，本金留在桌上</td></tr>
+      <tr><td><span class="dot" style="background:var(--s2)"></span> <b>中一次全收</b></td><td>彩金與本金一起收回，下一個點數再放</td></tr>
+      <tr><td><span class="dot" style="background:var(--s3)"></span> <b>一路不收</b></td><td>彩金全數加碼到同一個數字</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<!-- ============ 機率 ============ -->
+<section class="pane" id="prob">
+  <div class="card">
+    <h2>兩顆骰子點數分布（共 36 種）</h2>
+    <div class="bars num" id="bars"></div>
+  </div>
+  <div class="card">
+    <h2>莊家優勢</h2>
+    <div class="scroll"><table class="tbl num">
+      <tr><th>下注</th><th class="r">賠率</th><th class="r">莊家優勢</th></tr>
+      <tr><td>賠率注</td><td class="r">真實機率</td><td class="r"><b>0%</b></td></tr>
+      <tr><td>Don't Pass</td><td class="r">1 : 1</td><td class="r">1.36%</td></tr>
+      <tr><td>Pass Line</td><td class="r">1 : 1</td><td class="r">1.41%</td></tr>
+      <tr><td>放注 6、8</td><td class="r">7 : 6</td><td class="r">1.52%</td></tr>
+      <tr><td>放注 5、9</td><td class="r">7 : 5</td><td class="r">4.00%</td></tr>
+      <tr><td>放注 4、10</td><td class="r">9 : 5</td><td class="r">6.67%</td></tr>
+      <tr><td>Any Craps</td><td class="r">7 : 1</td><td class="r">11.1%</td></tr>
+      <tr><td>Any 7</td><td class="r">4 : 1</td><td class="r"><b>16.7%</b></td></tr>
+    </table></div>
+  </div>
+  <div class="card">
+    <h2>Pass 加賠率注的整體莊家優勢</h2>
+    <div class="scroll"><table class="tbl num">
+      <tr><th>賠率注</th><th class="r">莊家優勢</th></tr>
+      <tr><td>不下</td><td class="r">1.41%</td></tr>
+      <tr><td>1 倍</td><td class="r">0.85%</td></tr>
+      <tr><td>2 倍</td><td class="r">0.61%</td></tr>
+      <tr><td>3-4-5 倍</td><td class="r">0.37%</td></tr>
+    </table></div>
+  </div>
+</section>
+</main>
+
+<footer><img src="badge.png" alt=""><div class="brand"><b>欣群企業</b> ｜ 欣瀚資訊</div></footer>
+
+<script>
+"use strict";
+// ---------- 設定（localStorage 一律 try/catch；不可用 window.storage，那是 Artifact 專用，在瀏覽器裡不存在） ----------
+const KEY = "craps-trainer";
+const DEF = {pass:100, place:120, odds:"0", nums:[6,8], skip:"1", ins:"none", insAmt:10, src:"rand", n:20, man:"", runs:"100000", rolls:null, tab:"sim"};
+let cfg = Object.assign({}, DEF);
+try { Object.assign(cfg, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {} };
+
+const $ = s => document.querySelector(s);
+const MODES = [
+  {k:"collect", name:"收彩金",     c:"var(--s1)"},
+  {k:"down",    name:"中一次全收", c:"var(--s2)"},
+  {k:"ride",    name:"一路不收",   c:"var(--s3)"},
+];
+// 輸入一律 NFKC：全形數字「１２０」看起來一樣但 parseInt 讀不到
+const nfkc = s => String(s || "").normalize("NFKC");
+const toInt = (s, d) => { const v = parseInt(nfkc(s).replace(/[^\d]/g, ""), 10); return isNaN(v) ? d : v; };
+const fmt = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(Math.round(v)).toLocaleString("en-US");
+const cls = v => v > 0 ? "pos" : v < 0 ? "neg" : "zero";
+
+// ---------- 規則 ----------
+const PLACE_PAY = {4:9/5, 10:9/5, 5:7/5, 9:7/5, 6:7/6, 8:7/6};
+const PLACE_UNIT = {4:5, 10:5, 5:5, 9:5, 6:6, 8:6};
+const ODDS_PAY = {4:2, 10:2, 5:1.5, 9:1.5, 6:1.2, 8:1.2};
+const unitAmt = (n, amt) => Math.max(PLACE_UNIT[n], Math.floor(amt / PLACE_UNIT[n]) * PLACE_UNIT[n]);
+
+// 同一組骰子跑一種收法。quiet=true 時不產生文字（長期模擬用）。
+// 損益 = 口袋 + 桌上未結的注（Pass、賠率注、放注皆以面額計）。
+function play(rolls, c, mode, quiet) {
+  let pocket = 0, pass = 0, odds = 0, point = 0, place = {};
+  const out = quiet ? null : [];
+  let hi = 0, lo = 0;
+  for (const s of rolls) {
+    const com = quiet ? null : [], pl = quiet ? null : [];
+    const wasPoint = point;
+    if (!point) {
+      if (!pass) { pass = c.pass; pocket -= pass; }
+      if (c.ins === "craps" && c.insAmt) {
+        pocket -= c.insAmt;
+        if (s === 2 || s === 3 || s === 12) { pocket += c.insAmt * 8; com && com.push("Any Craps " + fmt(c.insAmt * 7)); }
+        else com && com.push("Any Craps " + fmt(-c.insAmt));
+      }
+      if (s === 7 || s === 11) { pocket += pass * 2; com && com.push("Pass " + fmt(pass)); pass = 0; }
+      else if (s === 2 || s === 3 || s === 12) { com && com.push("Pass " + fmt(-pass)); pass = 0; }
+      else {
+        point = s; com && com.push("點數 " + s);
+        odds = Math.floor(pass * c.odds); pocket -= odds;
+        const put = [];
+        for (const n of c.nums) {
+          if (c.skip && n === s) { if (place[n]) { pocket += place[n]; delete place[n]; } continue; }
+          if (!place[n]) { place[n] = unitAmt(n, c.place); pocket -= place[n]; put.push(n); }
+        }
+        if (pl && put.length) pl.push("放 " + put.join("、"));
+      }
+    } else {
+      if (c.ins === "seven" && c.insAmt) {
+        pocket -= c.insAmt;
+        if (s === 7) { pocket += c.insAmt * 5; com && com.push("Any 7 " + fmt(c.insAmt * 4)); }
+        else com && com.push("Any 7 " + fmt(-c.insAmt));
+      }
+      if (s === 7) {
+        com && com.push("七出 Pass " + fmt(-pass) + (odds ? "、賠率注 " + fmt(-odds) : ""));
+        const lost = Object.values(place).reduce((a, b) => a + b, 0);
+        if (pl && lost) pl.push("放注 " + fmt(-lost));
+        pass = 0; odds = 0; point = 0; place = {};
+      } else {
+        if (s in place) {
+          const bet = place[s], win = Math.floor(bet * PLACE_PAY[s]);
+          if (mode === "collect") { pocket += win; pl && pl.push(s + " 中 " + fmt(win)); }
+          else if (mode === "down") { pocket += win + bet; delete place[s]; pl && pl.push(s + " 中 " + fmt(win) + "・收回"); }
+          else {
+            const tot = bet + win, nb = Math.floor(tot / PLACE_UNIT[s]) * PLACE_UNIT[s];
+            pocket += tot - nb; place[s] = nb; pl && pl.push(s + " 中 " + fmt(win) + "・加碼至 " + nb.toLocaleString("en-US"));
+          }
+        }
+        if (s === point) {
+          const ow = Math.floor(odds * ODDS_PAY[s]);
+          pocket += pass * 2 + odds + ow;
+          com && com.push("Pass " + fmt(pass) + (odds ? "、賠率注 " + fmt(ow) : ""));
+          pass = 0; odds = 0; point = 0;
+        }
+      }
+    }
+    let net = pocket + pass + odds;
+    for (const k in place) net += place[k];
+    if (net > hi) hi = net; if (net < lo) lo = net;
+    out && out.push({s, wasPoint, com, pl, net});
+  }
+  let net = pocket + pass + odds;
+  for (const k in place) net += place[k];
+  return {net, hi, lo, steps:out};
+}
+
+function settings() {
+  return {
+    pass: Math.max(0, toInt(cfg.pass, 100)), place: Math.max(0, toInt(cfg.place, 120)),
+    odds: +cfg.odds, nums: cfg.nums.slice().sort((a, b) => a - b), skip: cfg.skip === "1",
+    ins: cfg.ins, insAmt: Math.max(0, toInt(cfg.insAmt, 10)),
+  };
+}
+const rnd6 = () => 1 + Math.floor(Math.random() * 6);
+const randRolls = n => Array.from({length:n}, () => { const a = rnd6(), b = rnd6(); return [a, b]; });
+// 自行輸入只有點數，骰面用最接近的拆法顯示
+const split = s => { const a = Math.max(1, Math.min(6, Math.floor(s / 2))); return [a, s - a]; };
+
+// ---------- 骰面 ----------
+const PIPS = {1:[[2,2]],2:[[1,1],[3,3]],3:[[1,1],[2,2],[3,3]],4:[[1,1],[3,1],[1,3],[3,3]],5:[[1,1],[3,1],[2,2],[1,3],[3,3]],6:[[1,1],[3,1],[1,2],[3,2],[1,3],[3,3]]};
+const die = n => `<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="5" fill="#C4161C"/>${PIPS[n].map(([x, y]) => `<circle cx="${x * 6.5}" cy="${y * 6.5}" r="2.3" fill="#fff"/>`).join("")}</svg>`;
+
+// ---------- 模擬畫面 ----------
+function render() {
+  const c = settings();
+  const rolls = cfg.rolls || [];
+  const sums = rolls.map(r => r[0] + r[1]);
+  $("#resTitle").textContent = sums.length + " 把結果";
+  const res = MODES.map(m => play(sums, c, m.k, false));
+
+  $("#tiles").innerHTML = MODES.map((m, i) => `<div class="tile"><div class="nm"><span class="dot" style="background:${m.c}"></span>${m.name}</div>
+    <div class="big num ${cls(res[i].net)}">${fmt(res[i].net)}</div>
+    <div class="sub num"><span style="white-space:nowrap">最高 ${fmt(res[i].hi)}</span>　<span style="white-space:nowrap">最低 ${fmt(res[i].lo)}</span></div></div>`).join("");
+
+  $("#legend").innerHTML = MODES.map(m => `<span><i class="dot" style="background:${m.c}"></i>${m.name}</span>`).join("");
+  drawChart(res, sums);
+
+  $("#rolls").innerHTML = rolls.map((r, j) => {
+    const st = res[0].steps[j];
+    const seven = st.wasPoint && st.s === 7;
+    const ph = st.wasPoint ? `<span class="ph on">點數 ${st.wasPoint}</span>` : `<span class="ph">出場</span>`;
+    return `<div class="roll${seven ? " seven" : ""}">
+      <div class="i num">${j + 1}</div>
+      <div class="dice">${die(r[0])}${die(r[1])}<span class="sum num">${st.s}</span></div>
+      <div class="ev">${ph}${st.com.join("　")}</div>
+      <div class="bals">${MODES.map((m, i) => { const x = res[i].steps[j]; return `<div class="bal"><div class="v num ${cls(x.net)}"><i class="dot" style="background:${m.c}"></i>${fmt(x.net)}</div>${x.pl.length ? `<div class="t">${x.pl.join("　")}</div>` : ""}</div>`; }).join("")}</div>
+    </div>`;
+  }).join("");
+}
+
+// 走勢圖：單一 y 軸、2px 線、十字線＋提示框；尾端直接標名稱（三條線以內）
+let chartData = null;
+function drawChart(res, sums) {
+  const svg = $("#chart");
+  const W = Math.max(300, svg.clientWidth || $("#chartbox").clientWidth || 600), H = W < 520 ? 230 : 280;
+  const padL = 52, padR = W < 520 ? 12 : 92, padT = 12, padB = 26;
+  const n = sums.length;
+  const series = res.map(r => [0].concat(r.steps.map(s => s.net)));
+  let lo = Math.min(0, ...series.flat()), hi = Math.max(0, ...series.flat());
+  if (hi === lo) { hi += 100; lo -= 100; }
+  const step = niceStep((hi - lo) / 4);
+  lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+  const x = i => padL + (W - padL - padR) * (n ? i / n : 0);
+  const y = v => padT + (H - padT - padB) * (1 - (v - lo) / (hi - lo));
+  let g = "";
+  for (let v = lo; v <= hi + 1e-9; v += step) {
+    g += `<line x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? "var(--muted)" : "var(--grid)"}" stroke-width="${v === 0 ? 1.5 : 1}"/>`;
+    g += `<text x="${padL - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`;
+  }
+  const every = n > 30 ? Math.ceil(n / 10) : n > 12 ? 5 : 1;
+  for (let i = every; i <= n; i += every) g += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle">${i}</text>`;
+  series.forEach((sv, k) => {
+    g += `<polyline fill="none" stroke="${MODES[k].c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${sv.map((v, i) => x(i) + "," + y(v)).join(" ")}"/>`;
+  });
+  // 尾端標籤，彼此至少隔 16px
+  if (padR > 60) {
+    const ends = series.map((sv, k) => ({k, y:y(sv[sv.length - 1])})).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 16) ends[i].y = ends[i - 1].y + 16;
+    ends.forEach(e => { g += `<circle cx="${x(n) + 8}" cy="${e.y}" r="4" fill="${MODES[e.k].c}"/><text x="${x(n) + 16}" y="${e.y + 4}" style="fill:var(--text2);font-size:12px">${MODES[e.k].name}</text>`; });
+  }
+  g += `<line id="cross" x1="0" x2="0" y1="${padT}" y2="${H - padB}" stroke="var(--muted)" stroke-dasharray="3 3" visibility="hidden"/>`;
+  g += series.map((sv, k) => `<circle class="hm" r="5" fill="${MODES[k].c}" stroke="var(--card)" stroke-width="2" visibility="hidden"/>`).join("");
+  g += `<rect x="${padL}" y="0" width="${W - padL - padR}" height="${H}" fill="transparent" id="hit"/>`;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.innerHTML = g;
+  chartData = {series, sums, x, y, n, padL, padR, W};
+  const hit = $("#hit");
+  const move = ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * (W / r.width);
+    const i = Math.max(0, Math.min(n, Math.round((px - padL) / ((W - padL - padR) / Math.max(1, n)))));
+    const cx = x(i);
+    const cr = $("#cross"); cr.setAttribute("x1", cx); cr.setAttribute("x2", cx); cr.setAttribute("visibility", "visible");
+    svg.querySelectorAll(".hm").forEach((c, k) => { c.setAttribute("cx", cx); c.setAttribute("cy", y(series[k][i])); c.setAttribute("visibility", "visible"); });
+    const tip = $("#tip");
+    tip.innerHTML = `<b>${i ? "第 " + i + " 把・" + sums[i - 1] : "開始"}</b>` + MODES.map((m, k) => `<div><span><i class="dot" style="background:${m.c}"></i>${m.name}</span><span class="num ${cls(series[k][i])}">${fmt(series[k][i])}</span></div>`).join("");
+    tip.hidden = false;
+    const bx = $("#chartbox").getBoundingClientRect(), left = ev.clientX - bx.left;
+    const tw = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(bx.width - tw, left + (left > bx.width / 2 ? -tw - 14 : 14))) + "px";
+    tip.style.top = (svg.getBoundingClientRect().top - bx.top + 8) + "px";
+  };
+  const leave = () => { $("#tip").hidden = true; const cr = $("#cross"); cr && cr.setAttribute("visibility", "hidden"); svg.querySelectorAll(".hm").forEach(c => c.setAttribute("visibility", "hidden")); };
+  hit.addEventListener("pointermove", move);
+  hit.addEventListener("pointerdown", move);
+  hit.addEventListener("pointerleave", leave);
+}
+function niceStep(raw) {
+  const p = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1))));
+  const f = raw / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+}
+
+// ---------- 控制項 ----------
+function syncUI() {
+  document.querySelectorAll(".seg[data-k]").forEach(seg => {
+    seg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === String(cfg[seg.dataset.k]))));
+  });
+  document.querySelectorAll("#fNums button").forEach(b => b.setAttribute("aria-pressed", String(cfg.nums.includes(+b.dataset.v))));
+  $("#fPass").value = cfg.pass; $("#fPlace").value = cfg.place; $("#fIns").value = cfg.insAmt; $("#fN").value = cfg.n; $("#fMan").value = cfg.man;
+  $("#insAmtF").hidden = cfg.ins === "none";
+  $("#nF").hidden = cfg.src === "manual"; $("#manF").hidden = cfg.src !== "manual";
+  $("#go").textContent = cfg.src === "manual" ? "計算" : "擲骰";
+  const c = settings();
+  $("#longCfg").textContent = `每場 ${toInt(cfg.n, 20)} 把・Pass ${c.pass}・賠率注 ${c.odds ? c.odds + " 倍" : "不下"}・放注 ${c.nums.join("、") || "無"}・保險 ${c.ins === "none" ? "不買" : (c.ins === "craps" ? "Any Craps " : "Any 7 ") + c.insAmt}`;
+}
+document.querySelectorAll(".seg[data-k]").forEach(seg => seg.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  cfg[seg.dataset.k] = b.dataset.v; save(); syncUI();
+  if (seg.dataset.k !== "runs" && seg.dataset.k !== "src") render();
+}));
+$("#fNums").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const v = +b.dataset.v;
+  cfg.nums = cfg.nums.includes(v) ? cfg.nums.filter(x => x !== v) : cfg.nums.concat(v);
+  save(); syncUI(); render();
+});
+[["#fPass", "pass"], ["#fPlace", "place"], ["#fIns", "insAmt"]].forEach(([id, k]) => {
+  $(id).addEventListener("input", e => { cfg[k] = toInt(e.target.value, DEF[k]); save(); render(); syncUI(); });
+  $(id).addEventListener("change", e => { e.target.value = cfg[k]; });
+});
+$("#fN").addEventListener("change", e => { cfg.n = Math.min(500, Math.max(1, toInt(e.target.value, 20))); e.target.value = cfg.n; save(); syncUI(); });
+$("#fMan").addEventListener("input", e => { cfg.man = e.target.value; save(); });
+
+function parseManual(txt) {
+  const parts = nfkc(txt).split(/[^\d]+/).filter(Boolean).map(Number);
+  const bad = parts.filter(v => v < 2 || v > 12);
+  if (!parts.length) return {err:"未輸入點數"};
+  if (bad.length) return {err:"點數須為 2–12：" + bad.slice(0, 5).join("、")};
+  return {rolls:parts.map(split)};
+}
+$("#go").addEventListener("click", () => {
+  const btn = $("#go"); if (btn.disabled) return;
+  btn.disabled = true;
+  $("#manErr").hidden = true;
+  if (cfg.src === "manual") {
+    const p = parseManual(cfg.man);
+    if (p.err) { $("#manErr").textContent = p.err; $("#manErr").hidden = false; btn.disabled = false; return; }
+    cfg.rolls = p.rolls;
+  } else cfg.rolls = randRolls(Math.min(500, Math.max(1, toInt(cfg.n, 20))));
+  save(); render();
+  setTimeout(() => { btn.disabled = false; }, 250);
+});
+
+// ---------- 長期 ----------
+function pct(a, p) { return a[Math.min(a.length - 1, Math.floor(a.length * p))]; }
+$("#goLong").addEventListener("click", () => {
+  const btn = $("#goLong"); if (btn.disabled) return;
+  btn.disabled = true;
+  const c = settings(), N = +cfg.runs, per = Math.min(500, Math.max(1, toInt(cfg.n, 20)));
+  const variants = [{label:"目前設定", c}];
+  if (c.ins !== "none") variants.push({label:"不買保險", c:Object.assign({}, c, {ins:"none"})});
+  const acc = variants.map(() => MODES.map(() => new Float64Array(N)));
+  const prog = $("#prog"), bar = prog.querySelector("i"); prog.hidden = false;
+  let done = 0;
+  const chunk = () => {
+    const end = Math.min(N, done + 4000);
+    const buf = new Array(per);
+    for (; done < end; done++) {
+      for (let i = 0; i < per; i++) buf[i] = rnd6() + rnd6();
+      variants.forEach((v, a) => MODES.forEach((m, k) => { acc[a][k][done] = play(buf, v.c, m.k, true).net; }));
+    }
+    bar.style.width = (done / N * 100) + "%";
+    btn.textContent = "計算中 " + Math.floor(done / N * 100) + "%";
+    if (done < N) return setTimeout(chunk, 0);
+    $("#longOut").innerHTML = variants.map((v, a) => `<div class="card"><h2>${v.label}・${N.toLocaleString("en-US")} 場 × ${per} 把</h2><div class="tiles">${MODES.map((m, k) => {
+      const arr = acc[a][k].slice().sort();
+      let sum = 0, win = 0; for (const x of arr) { sum += x; if (x > 0) win++; }
+      const avg = sum / N;
+      return `<div class="tile"><div class="nm"><span class="dot" style="background:${m.c}"></span>${m.name}</div>
+        <div class="big num ${cls(avg)}">${fmt(avg)}</div><div class="sub">平均損益</div>
+        <dl class="kv num">
+          <dt>獲利機率</dt><dd>${(win / N * 100).toFixed(1)}%</dd>
+          <dt>中位數</dt><dd class="${cls(pct(arr, .5))}">${fmt(pct(arr, .5))}</dd>
+          <dt>第 10 百分位</dt><dd class="${cls(pct(arr, .1))}">${fmt(pct(arr, .1))}</dd>
+          <dt>第 90 百分位</dt><dd class="${cls(pct(arr, .9))}">${fmt(pct(arr, .9))}</dd>
+          <dt>最佳</dt><dd class="${cls(arr[N - 1])}">${fmt(arr[N - 1])}</dd>
+          <dt>最差</dt><dd class="${cls(arr[0])}">${fmt(arr[0])}</dd>
+        </dl></div>`;
+    }).join("")}</div></div>`).join("");
+    btn.textContent = "開始計算"; btn.disabled = false; prog.hidden = true; bar.style.width = "0";
+  };
+  btn.textContent = "計算中 0%";
+  setTimeout(chunk, 30);
+});
+
+// ---------- 機率長條 ----------
+(() => {
+  const ways = {2:1,3:2,4:3,5:4,6:5,7:6,8:5,9:4,10:3,11:2,12:1};
+  $("#bars").innerHTML = Object.keys(ways).map(s => `<div class="${s === "7" ? "s7" : ""}"><span>${ways[s]}</span><i style="height:${ways[s] / 6 * 100}%"></i><b>${s}</b></div>`).join("");
+})();
+
+// ---------- 分頁 ----------
+function showTab(t) {
+  document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.t === t)));
+  document.querySelectorAll("section.pane").forEach(p => p.classList.toggle("on", p.id === t));
+  cfg.tab = t; save();
+  if (t === "sim") render();
+}
+document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => { showTab(b.dataset.t); scrollTo(0, 0); }));
+
+if (!cfg.rolls || !cfg.rolls.length) cfg.rolls = randRolls(20);
+syncUI();
+showTab(document.getElementById(cfg.tab) ? cfg.tab : "sim");
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (cfg.tab === "sim") render(); }, 150); });
+
+// ---------- 自動換新版 ----------
+// GitHub Pages 快取 10 分鐘，手機會一直看到舊畫面。開頁後不經快取抓一次線上版，build 不同就換網址重新載入；每個 build 只重載一次。
+(async () => {
+  if (location.protocol !== "https:") return;
+  try {
+    const mine = document.querySelector('meta[name="build"]').content;
+    const res = await fetch(location.pathname + "?nc=" + Date.now(), {cache:"no-store"});
+    const live = ((await res.text()).match(/<meta name="build" content="(\d+)"/) || [])[1];
+    if (live && live !== mine && sessionStorage.getItem("reloaded") !== live) {
+      sessionStorage.setItem("reloaded", live);
+      location.replace(location.pathname + "?v=" + live + location.hash);
+    }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
