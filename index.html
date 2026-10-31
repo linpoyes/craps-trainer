@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="build" content="202610312241">
+<meta name="build" content="202610312247">
 <title>戰勝花旗骰</title>
 <meta name="description" content="花旗骰下注模擬：三種收注方式損益比較、長期期望值、策略與機率。">
 <meta property="og:title" content="戰勝花旗骰">
@@ -56,6 +56,10 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+/* 滑鼠點擊不畫外框，鍵盤操作才顯示金色外框 */
+button:focus:not(:focus-visible){outline:none}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+nav.tabs button:focus-visible{outline-offset:-3px}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--text);font:17px/1.6 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif}
 .num{font-variant-numeric:tabular-nums}
@@ -74,6 +78,8 @@ nav.tabs button[aria-selected="true"]{color:#F3E2B0;border-bottom-color:#E2B64A}
 main{max-width:1080px;margin:0 auto;padding:16px 16px 40px}
 section.pane{display:none}
 section.pane.on{display:block}
+/* 文字頁在電腦上限制行寬，好讀 */
+#long,#guide,#prob{max-width:820px;margin:0 auto}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
 h2{font-size:20px;margin:0 0 12px;letter-spacing:.04em}
 h3{font-size:18px;margin:18px 0 8px}
@@ -92,13 +98,15 @@ details.cfg summary::-webkit-details-marker{display:none}
 details.cfg summary::after{content:"";margin-left:auto;flex:none;width:10px;height:10px;border-right:2.5px solid var(--text2);border-bottom:2.5px solid var(--text2);transform:rotate(45deg);align-self:center}
 details.cfg[open] summary::after{transform:rotate(-135deg)}
 details.cfg[open] summary{margin-bottom:14px}
-.cfgsum{font-size:14px;font-weight:600;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 摘要另起一行完整顯示，不截斷 */
+details.cfg summary{flex-wrap:wrap;row-gap:2px}
+.cfgsum{order:3;flex-basis:100%;font-size:15px;font-weight:600;color:var(--muted);line-height:1.5}
 details.cfg[open] .cfgsum{display:none}
 
 /* 牌桌：絨布永遠是綠色，文字白色，與深淺色模式無關 */
 .viewseg{margin-bottom:12px}
 .seg.viewseg{grid-template-columns:repeat(3,minmax(0,1fr))}
-.viewseg button{display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:14px;padding:6px 2px;line-height:1.25}
+.viewseg button{display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:clamp(13px,3.7vw,15px);padding:6px 2px;line-height:1.25;white-space:nowrap}
 .viewseg .dot{width:9px;height:9px}
 .felt{--fl:rgba(255,255,255,.82);background:radial-gradient(120% 90% at 50% 40%,#16784F,#0A4A31);border:7px solid #4A2F17;border-radius:20px;padding:10px;color:#fff;box-shadow:inset 0 0 0 2px #B8892B}
 .area{position:relative;border:2px solid var(--fl);border-radius:10px;background:transparent;color:#fff;font:inherit;cursor:pointer;container-type:inline-size;transition:box-shadow .2s,background .2s}
@@ -108,7 +116,7 @@ details.cfg[open] .cfgsum{display:none}
 .nums{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
 .nb{min-height:6.2em;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:6px 2px 8px}
 .nb .n{font-size:26px;font-weight:900;line-height:1.1;letter-spacing:-.02em}
-.nb .pay{font-size:min(12px,25cqi);opacity:.85;white-space:nowrap}
+.nb .pay{font-size:min(13px,28cqi);opacity:.9;white-space:nowrap}
 .nb.pt .n{color:#FFE08A}
 .slot{display:flex;flex-direction:column;gap:3px;justify-content:center;margin-top:4px;min-height:2.2em;align-items:center}
 .chip{display:inline-flex;align-items:center;justify-content:center;min-width:2.3em;height:2.3em;padding:0 .35em;border-radius:1.15em;background:#E9BF4F;color:#1A1206;font-weight:900;font-size:min(14px,27cqi);border:2px dashed rgba(255,255,255,.9);box-shadow:0 2px 0 rgba(0,0,0,.35);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -116,9 +124,9 @@ details.cfg[open] .cfgsum{display:none}
 .chip.off{opacity:.45}
 .rb{position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);font-size:min(13px,24cqi);font-weight:900;padding:1px 7px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums;z-index:2}
 .rb.w{background:#22A35A;color:#fff} .rb.l{background:#D2353B;color:#fff}
-.puck{flex:none;width:26px;height:26px;border-radius:50%;background:#fff;color:#111;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;border:2px solid #111;box-shadow:0 2px 4px rgba(0,0,0,.4);z-index:3}
+.puck{flex:none;min-width:26px;height:26px;padding:0 3px;border-radius:13px;background:#fff;color:#111;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;border:2px solid #111;box-shadow:0 2px 4px rgba(0,0,0,.4);z-index:3}
 .puck.offp{background:#111;color:#fff;border-color:#fff}
-.mid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:8px;margin:14px 0 12px}
+.felt .mid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:8px;margin:14px 0 12px}
 .dzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:7.5em;border:2px dashed rgba(255,255,255,.35);border-radius:12px;padding:6px}
 .dzone .dd{display:flex;align-items:center;gap:8px}
 .dzone .dd svg{width:46px;height:46px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.45))}
@@ -130,9 +138,9 @@ details.cfg[open] .cfgsum{display:none}
 @media (prefers-reduced-motion:reduce){.dzone.shake .dd{animation:none}}
 .props{display:grid;gap:8px}
 .pb{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 4px 10px;min-height:3.6em}
-.pb .pn{font-weight:800;font-size:15px}
+.pb .pn{font-weight:800;font-size:min(15px,14cqi);white-space:nowrap}
 .pb[data-p="seven"] .pn{color:#FFB3B5}
-.pb .pay{font-size:12px;opacity:.78}
+.pb .pay{font-size:13px;opacity:.9}
 .pb .slot{min-height:0;margin-top:2px}
 .passline{display:flex;align-items:center;justify-content:center;gap:10px;min-height:3.4em;padding:6px 10px 10px;border-width:3px;cursor:default}
 .passline .pn{font-weight:900;letter-spacing:.22em;font-size:17px}
@@ -142,11 +150,6 @@ details.cfg[open] .cfgsum{display:none}
 .tinfo .k{font-weight:800;font-size:16px}
 .tinfo .net{font-size:22px;font-weight:900}
 .tinfo .ev{font-size:15px;color:var(--text2);line-height:1.5}
-.tctl{display:grid;grid-template-columns:44px minmax(0,1fr) 44px auto;gap:8px;align-items:center;margin-bottom:12px}
-.sbtn{min-height:44px;min-width:44px;border:1px solid var(--line);background:var(--soft);border-radius:10px;font-size:22px;font-weight:800;cursor:pointer;line-height:1}
-.sbtn.play{font-size:16px;padding:0 14px}
-.sbtn:disabled{opacity:.4}
-input[type=range]{width:100%;accent-color:var(--red);height:32px}
 .roll{cursor:pointer}
 .roll.cur{outline:3px solid var(--gold);outline-offset:-1px}
 @media (max-width:380px){ .nb .n{font-size:22px} .felt{padding:8px;border-width:5px} .nums{gap:4px} .dzone .dd svg{width:38px;height:38px} .dzone .tot{font-size:28px} }
@@ -213,7 +216,9 @@ svg.chart text{fill:var(--muted);font-size:12px}
 .tbl th,.tbl td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left;vertical-align:top}
 .tbl th{background:var(--head);color:#F3E2B0;font-weight:700;font-size:15px}
 .tbl td.r,.tbl th.r{text-align:right}
-.tbl th,.tbl.num td:first-child{white-space:nowrap}
+/* 數字、賠率不換行；窄螢幕放不下就橫向捲動，不把字擠成直排 */
+.tbl th,.tbl td.r,.tbl .tag{white-space:nowrap}
+@media (max-width:420px){.tbl{font-size:15px}.tbl th,.tbl td{padding:8px 6px}}
 .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tag{display:inline-block;font-size:13px;font-weight:700;padding:0 8px;border-radius:999px;white-space:nowrap}
 .tag.ok{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
@@ -238,7 +243,7 @@ svg.chart text{fill:var(--muted);font-size:12px}
 .bars b{font-size:15px;color:var(--text)}
 
 
-@media (max-width:360px){ main{padding:12px} .top h1{font-size:22px} .chips{grid-template-columns:repeat(3,1fr)} }
+@media (max-width:360px){ main{padding:12px} .viewseg .dot{display:none} .top h1{font-size:22px} .chips{grid-template-columns:repeat(3,1fr)} }
 </style>
 </head>
 <body>
@@ -269,12 +274,6 @@ svg.chart text{fill:var(--muted);font-size:12px}
       <div class="area passline" data-p="pass"><span class="pn">PASS LINE</span><span class="slot"></span></div>
     </div>
     <div class="tinfo" id="tInfo"></div>
-    <div class="tctl">
-      <button class="sbtn" id="tPrev" aria-label="上一擲">‹</button>
-      <input type="range" id="tRange" min="1" max="20" value="1" aria-label="擲次">
-      <button class="sbtn" id="tNext" aria-label="下一擲">›</button>
-      <button class="sbtn play" id="tPlay">播放</button>
-    </div>
     <button class="btn" id="go">擲骰</button>
   </div>
 
@@ -607,7 +606,7 @@ function render() {
 
 // ---------- 牌桌 ----------
 // 顯示「第 cur 把擲出當下」桌上的注（pre）與這一把的結算（hit），以選定的收法為準。
-let last = null, timer = null;
+let last = null, shake = false;
 const PAYTXT = {4:"9:5", 5:"7:5", 6:"7:6", 8:"7:6", 9:"7:5", 10:"9:5"};
 const chipTxt = v => v >= 10000 ? (Math.floor(v / 1000) / 10) + "萬" : v.toLocaleString("en-US");
 const chip = (v, k) => `<span class="chip ${k || ""}">${chipTxt(v)}</span>`;
@@ -627,7 +626,7 @@ function drawTable() {
   const state = pre.point ? `點數 ${pre.point}` : `<span class="puck offp">OFF</span>開局擲`;
   const dz = $("#tDice");
   dz.innerHTML = `<div class="dd">${die(r[0])}${die(r[1])}<span class="tot num">${st.s}</span></div><div class="st${seven ? " seven" : ""}">${seven ? "七出" : state}</div>`;
-  dz.classList.remove("shake"); void dz.offsetWidth; if (timer) dz.classList.add("shake");
+  dz.classList.remove("shake"); void dz.offsetWidth; if (shake) { dz.classList.add("shake"); shake = false; }
   const ins = {seven:cfg.ins === "seven", craps:cfg.ins === "craps"};
   document.querySelectorAll(".pb").forEach(b => {
     const k = b.dataset.p, h = hit[k];
@@ -643,30 +642,11 @@ function drawTable() {
   pl.querySelectorAll(".rb").forEach(e => e.remove()); pl.insertAdjacentHTML("beforeend", rb((ph || 0) + (oh || 0)));
   const m = MODES[vi];
   $("#tInfo").innerHTML = `<div class="row1"><span class="k num">第 ${cfg.cur}／${n} 擲</span><span class="net num ${cls(st.net)}">${fmt(st.net)}</span></div><div class="ev">${st.com.concat(st.pl).join("　")}</div>`;
-  const rg = $("#tRange"); rg.max = n; rg.value = cfg.cur;
-  $("#tPrev").disabled = cfg.cur <= 1; $("#tNext").disabled = cfg.cur >= n;
-  $("#tPlay").textContent = timer ? "暫停" : "播放";
   document.querySelectorAll(".roll.cur").forEach(e => e.classList.remove("cur"));
   const row = document.querySelector(`.roll[data-j="${cfg.cur}"]`); row && row.classList.add("cur");
 }
-function goTo(k, keepPlay) {
-  if (!keepPlay) stopPlay();
-  cfg.cur = k; save(); drawTable();
-}
-function stopPlay() { if (timer) { clearInterval(timer); timer = null; $("#tPlay").textContent = "播放"; } }
-function startPlay(from) {
-  stopPlay();
-  if (from) cfg.cur = from; else if (cfg.cur >= last.rolls.length) cfg.cur = 1;
-  timer = setInterval(() => {
-    if (cfg.cur >= last.rolls.length) { stopPlay(); drawTable(); return; }
-    goTo(cfg.cur + 1, true);
-  }, 900);
-  drawTable();
-}
-$("#tPrev").addEventListener("click", () => goTo(cfg.cur - 1));
-$("#tNext").addEventListener("click", () => goTo(cfg.cur + 1));
-$("#tRange").addEventListener("input", e => goTo(+e.target.value));
-$("#tPlay").addEventListener("click", () => timer ? (stopPlay(), drawTable()) : startPlay());
+// 擲骰後直接顯示最後一擲（結果）；點逐擲清單某列可回看那一擲
+function goTo(k) { cfg.cur = k; save(); drawTable(); }
 $("#rolls").addEventListener("click", e => {
   const row = e.target.closest(".roll"); if (!row) return;
   goTo(+row.dataset.j);
@@ -758,7 +738,8 @@ function syncUI() {
     seg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === String(cfg[seg.dataset.k]))));
   });
   document.querySelectorAll("#fNums button").forEach(b => b.setAttribute("aria-pressed", String(cfg.nums.includes(+b.dataset.v))));
-  $("#fPass").value = cfg.pass; $("#fPlace").value = cfg.place; $("#fIns").value = cfg.insAmt; $("#fN").value = cfg.n; $("#fMan").value = cfg.man;
+  // 正在輸入的欄位不回寫，否則刪光會被補回預設值、全形輸入法選字中會被打斷；離開欄位（change）再整理
+  [["#fPass", cfg.pass], ["#fPlace", cfg.place], ["#fIns", cfg.insAmt], ["#fN", cfg.n], ["#fMan", cfg.man]].forEach(([id, v]) => { if (document.activeElement !== $(id)) $(id).value = v; });
   $("#insAmtF").hidden = cfg.ins === "none";
   $("#nF").hidden = cfg.src === "manual"; $("#manF").hidden = cfg.src !== "manual";
   $("#go").textContent = cfg.src === "manual" ? "計算" : "擲骰";
@@ -779,7 +760,9 @@ $("#fNums").addEventListener("click", e => {
   save(); syncUI(); render();
 });
 [["#fPass", "pass"], ["#fPlace", "place"], ["#fIns", "insAmt"]].forEach(([id, k]) => {
-  $(id).addEventListener("input", e => { cfg[k] = toInt(e.target.value, DEF[k]); save(); render(); syncUI(); });
+  const upd = e => { cfg[k] = toInt(e.target.value, DEF[k]); save(); render(); syncUI(); };
+  $(id).addEventListener("input", e => { if (!e.isComposing) upd(e); });
+  $(id).addEventListener("compositionend", upd);
   $(id).addEventListener("change", e => { e.target.value = cfg[k]; });
 });
 $("#fN").addEventListener("change", e => { cfg.n = Math.min(500, Math.max(1, toInt(e.target.value, 20))); e.target.value = cfg.n; save(); syncUI(); });
@@ -801,8 +784,7 @@ $("#go").addEventListener("click", () => {
     if (p.err) { $("#manErr").textContent = p.err; $("#manErr").hidden = false; $("#cfgBox").open = true; btn.disabled = false; return; }
     cfg.rolls = p.rolls;
   } else cfg.rolls = randRolls(Math.min(500, Math.max(1, toInt(cfg.n, 20))));
-  cfg.cur = 1; save(); render();
-  startPlay(1);
+  cfg.cur = cfg.rolls.length; shake = true; save(); render();
   setTimeout(() => { btn.disabled = false; }, 250);
 });
 
@@ -871,7 +853,6 @@ cfgBox.addEventListener("toggle", () => { if (!wide.matches) { cfg.cfgOpen = cfg
 wide.addEventListener("change", () => { cfgBox.open = wide.matches || cfg.cfgOpen === true; });
 syncUI();
 showTab(document.getElementById(cfg.tab) ? cfg.tab : "sim");
-document.addEventListener("visibilitychange", () => { if (document.hidden) { stopPlay(); drawTable(); } });
 let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (cfg.tab === "sim") render(); }, 150); });
 
 // ---------- 自動換新版 ----------
