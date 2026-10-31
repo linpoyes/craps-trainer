@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="build" content="202610312222">
+<meta name="build" content="202610312229">
 <title>戰勝花旗骰</title>
-<meta name="description" content="花旗骰下注模擬：三種收法損益比較、長期期望值、下法與機率。">
+<meta name="description" content="花旗骰下注模擬：三種收注方式損益比較、長期期望值、策略與機率。">
 <meta property="og:title" content="戰勝花旗骰">
 <meta property="og:site_name" content="戰勝花旗骰">
-<meta property="og:description" content="花旗骰下注模擬：三種收法損益比較、長期期望值、下法與機率。">
+<meta property="og:description" content="花旗骰下注模擬：三種收注方式損益比較、長期期望值、策略與機率。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://linpoyes.github.io/craps-trainer/">
 <meta property="og:image" content="https://linpoyes.github.io/craps-trainer/og.png?v=1">
@@ -30,7 +30,7 @@
   --text:#14110D; --text2:#4A4540; --muted:#6B655D;
   --gold:#8A6A12; --red:#B3121B;
   --good:#0F7B3F; --bad:#C0262D;
-  --s1:#2a78d6; --s2:#1baf7a; --s3:#eb6834;   /* 收彩金／中一次全收／一路不收，驗證過的前三格 */
+  --s1:#2a78d6; --s2:#1baf7a; --s3:#eb6834;   /* 收彩續押／中獎撤注／全額滾注，驗證過的前三格 */
   --grid:#E6E0D4;
   --head:#0C0A08; --headText:#F3E2B0;
 }
@@ -173,6 +173,10 @@ textarea{min-height:76px;resize:vertical;line-height:1.5}
 .dot{width:12px;height:12px;border-radius:50%;flex:none;display:inline-block}
 .tile .big{grid-column:2;grid-row:1/3;font-size:30px;font-weight:800;line-height:1.2;text-align:right}
 .tile .sub{grid-column:1}
+.nos{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+.nosh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:10px}
+.nosh b{font-size:18px}
+.nosh span{font-size:14px;color:var(--muted)}
 .tile .kv{grid-column:1/-1}
 @media (min-width:900px){.tile{display:block}.tile .big{text-align:left;margin-top:4px}}
 .tile .sub{font-size:14px;color:var(--muted)}
@@ -242,7 +246,7 @@ svg.chart text{fill:var(--muted);font-size:12px}
 <nav class="tabs" role="tablist"><div class="in">
   <button role="tab" data-t="sim" aria-selected="true">模擬</button>
   <button role="tab" data-t="long" aria-selected="false">長期</button>
-  <button role="tab" data-t="guide" aria-selected="false">下法</button>
+  <button role="tab" data-t="guide" aria-selected="false">策略</button>
   <button role="tab" data-t="prob" aria-selected="false">機率</button>
 </div></nav>
 
@@ -252,7 +256,7 @@ svg.chart text{fill:var(--muted);font-size:12px}
 <div class="simgrid">
   <div class="card tablecard" id="tableCard">
     <div class="seg viewseg" data-k="view">
-      <button data-v="0"><i class="dot" style="background:var(--s1)"></i>收彩金</button><button data-v="1"><i class="dot" style="background:var(--s2)"></i>中一次全收</button><button data-v="2"><i class="dot" style="background:var(--s3)"></i>一路不收</button></div>
+      <button data-v="0"><i class="dot" style="background:var(--s1)"></i>收彩續押</button><button data-v="1"><i class="dot" style="background:var(--s2)"></i>中獎撤注</button><button data-v="2"><i class="dot" style="background:var(--s3)"></i>全額滾注</button></div>
     <div class="felt" id="felt">
       <div class="nums" id="tNums"></div>
       <div class="mid">
@@ -266,9 +270,9 @@ svg.chart text{fill:var(--muted);font-size:12px}
     </div>
     <div class="tinfo" id="tInfo"></div>
     <div class="tctl">
-      <button class="sbtn" id="tPrev" aria-label="上一把">‹</button>
-      <input type="range" id="tRange" min="1" max="20" value="1" aria-label="第幾把">
-      <button class="sbtn" id="tNext" aria-label="下一把">›</button>
+      <button class="sbtn" id="tPrev" aria-label="上一擲">‹</button>
+      <input type="range" id="tRange" min="1" max="20" value="1" aria-label="擲次">
+      <button class="sbtn" id="tNext" aria-label="下一擲">›</button>
       <button class="sbtn play" id="tPlay">播放</button>
     </div>
     <button class="btn" id="go">擲骰</button>
@@ -284,24 +288,25 @@ svg.chart text{fill:var(--muted);font-size:12px}
       <button data-v="0">不下</button><button data-v="1">1 倍</button><button data-v="2">2 倍</button><button data-v="3">3 倍</button></div></div>
     <div class="field"><span class="lb">放注數字</span><div class="chips" id="fNums">
       <button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button><button data-v="8">8</button><button data-v="9">9</button><button data-v="10">10</button></div></div>
-    <div class="field"><span class="lb">與點數相同的數字</span><div class="seg" data-k="skip">
-      <button data-v="1">不放</button><button data-v="0">照放</button></div></div>
-    <div class="field"><span class="lb">保險</span><div class="seg" data-k="ins">
-      <button data-v="none">不買</button><button data-v="craps">Any Craps</button><button data-v="seven">Any 7</button></div></div>
-    <div class="field" id="insAmtF"><label for="fIns">保險金額</label><input id="fIns" class="amt num" inputmode="numeric" value="10"></div>
-    <div class="field"><span class="lb">骰子結果</span><div class="seg" data-k="src">
-      <button data-v="rand">隨機</button><button data-v="manual">自行輸入</button></div></div>
-    <div class="field" id="nF"><label for="fN">把數</label><input id="fN" class="amt num" inputmode="numeric" value="20"></div>
-    <div class="field" id="manF" hidden><label for="fMan">每把點數</label><textarea id="fMan" class="num" placeholder="4 10 7 7 10 9 11 …"></textarea><div class="err" id="manErr" hidden></div></div>
+    <div class="field"><span class="lb">點數同號放注</span><div class="seg" data-k="skip">
+      <button data-v="1">不下注</button><button data-v="0">照常下注</button></div></div>
+    <div class="field"><span class="lb">保險注</span><div class="seg" data-k="ins">
+      <button data-v="none">不下注</button><button data-v="craps">Any Craps</button><button data-v="seven">Any 7</button></div></div>
+    <div class="field" id="insAmtF"><label for="fIns">保險注金額</label><input id="fIns" class="amt num" inputmode="numeric" value="10"></div>
+    <div class="field"><span class="lb">擲骰來源</span><div class="seg" data-k="src">
+      <button data-v="rand">隨機</button><button data-v="manual">手動輸入</button></div></div>
+    <div class="field" id="nF"><label for="fN">擲數</label><input id="fN" class="amt num" inputmode="numeric" value="20"></div>
+    <div class="field" id="manF" hidden><label for="fMan">各擲點數</label><textarea id="fMan" class="num" placeholder="4 10 7 7 10 9 11 …"></textarea><div class="err" id="manErr" hidden></div></div>
   </details>
 
   <div class="rescol">
     <div class="card">
-      <h2 id="resTitle">20 把結果</h2>
+      <h2 id="resTitle">20 擲結果</h2>
       <div class="tiles" id="tiles"></div>
+      <div class="nos" id="nos"></div>
       <div class="chartbox" id="chartbox">
         <div class="legend" id="legend"></div>
-        <svg class="chart" id="chart" role="img" aria-label="三種收法每把累計損益"></svg>
+        <svg class="chart" id="chart" role="img" aria-label="三種收注方式累計損益"></svg>
         <div class="tip" id="tip" hidden></div>
       </div>
     </div>
@@ -326,23 +331,23 @@ svg.chart text{fill:var(--muted);font-size:12px}
 <!-- ============ 下法 ============ -->
 <section class="pane" id="guide">
   <div class="card">
-    <h2>一局的流程</h2>
+    <h2>每局流程</h2>
     <div class="flow">
-      <p><b>出場擲</b>（尚無點數）</p>
+      <p><b>開局擲（Come-out）</b></p>
       <p>7、11 → Pass 贏</p>
       <p>2、3、12 → Pass 輸</p>
-      <p>4、5、6、8、9、10 → 成為點數</p>
+      <p>4、5、6、8、9、10 → 建立點數（Point）</p>
     </div>
     <div class="flow">
-      <p><b>有點數後</b></p>
-      <p>先擲出點數 → Pass 贏，回到出場擲</p>
-      <p>先擲出 7 → 七出，Pass、賠率注、放注全輸</p>
+      <p><b>點數建立後</b></p>
+      <p>先擲出點數 → Pass 贏，回到開局擲</p>
+      <p>先擲出 7 → 七出（Seven-out），Pass、賠率注、放注全數輸掉</p>
       <p>其他數字 → 只結算放注</p>
     </div>
   </div>
 
   <div class="card">
-    <h2>開始前（出場擲）</h2>
+    <h2>開局擲（Come-out）</h2>
     <div class="scroll"><table class="tbl num">
       <tr><th>結果</th><th class="r">機率</th><th>Pass</th><th>Don't Pass</th></tr>
       <tr><td>7、11</td><td class="r">22.2%</td><td><span class="tag ok">贏</span></td><td><span class="tag no">輸</span></td></tr>
@@ -353,17 +358,17 @@ svg.chart text{fill:var(--muted);font-size:12px}
     <h3>下注選擇</h3>
     <div class="scroll"><table class="tbl">
       <tr><th>下注</th><th>建議</th><th>理由</th></tr>
-      <tr><td><b>Pass Line</b></td><td><span class="tag ok">主注</span></td><td>莊家優勢 1.41%；出場擲贏的機率是輸的兩倍</td></tr>
-      <tr><td>Don't Pass</td><td><span class="tag mid">可</span></td><td>莊家優勢 1.36%</td></tr>
+      <tr><td><b>Pass Line</b></td><td><span class="tag ok">主注</span></td><td>莊家優勢 1.41%；開局擲贏面為輸面的兩倍</td></tr>
+      <tr><td>Don't Pass</td><td><span class="tag mid">可選</span></td><td>莊家優勢 1.36%</td></tr>
       <tr><td>Any Craps</td><td><span class="tag no">不建議</span></td><td>莊家優勢 11.1%</td></tr>
-      <tr><td>賠率注、Come</td><td><span class="tag mid">不可下</span></td><td>須有點數</td></tr>
-      <tr><td>放注</td><td><span class="tag mid">不作用</span></td><td>出場擲時放注關閉，擲出 7 不會輸掉</td></tr>
+      <tr><td>賠率注、Come</td><td><span class="tag mid">不開放</span></td><td>點數建立後才可下注</td></tr>
+      <tr><td>放注</td><td><span class="tag mid">不作用</span></td><td>開局擲時放注關閉，擲出 7 不輸</td></tr>
     </table></div>
-    <div class="key">開始前只下 Pass。</div>
+    <div class="key">開局擲只下 Pass Line。</div>
   </div>
 
   <div class="card">
-    <h2>開始後（有點數）</h2>
+    <h2>點數建立後</h2>
     <div class="scroll"><table class="tbl num">
       <tr><th>點數</th><th class="r">先出點數</th><th class="r">先出 7</th><th class="r">賠率注賠率</th></tr>
       <tr><td>4、10</td><td class="r">33.3%</td><td class="r">66.7%</td><td class="r">2 : 1</td></tr>
@@ -374,34 +379,34 @@ svg.chart text{fill:var(--muted);font-size:12px}
     <div class="scroll"><table class="tbl">
       <tr><th>下注</th><th>建議</th><th>理由</th></tr>
       <tr><td><b>賠率注</b></td><td><span class="tag ok">優先</span></td><td>莊家優勢 0%，照真實機率賠</td></tr>
-      <tr><td><b>放注 6、8</b></td><td><span class="tag ok">建議</span></td><td>莊家優勢 1.52%；與點數相同的不放</td></tr>
-      <tr><td>Come</td><td><span class="tag mid">可</span></td><td>等同再開一個 Pass</td></tr>
-      <tr><td>放注 5、9</td><td><span class="tag mid">勉強</span></td><td>莊家優勢 4.0%</td></tr>
+      <tr><td><b>放注 6、8</b></td><td><span class="tag ok">建議</span></td><td>莊家優勢 1.52%；點數同號不下注</td></tr>
+      <tr><td>Come</td><td><span class="tag mid">可選</span></td><td>等同再開一個 Pass</td></tr>
+      <tr><td>放注 5、9</td><td><span class="tag mid">次選</span></td><td>莊家優勢 4.0%</td></tr>
       <tr><td>放注 4、10</td><td><span class="tag no">不建議</span></td><td>莊家優勢 6.67%</td></tr>
       <tr><td>Any 7</td><td><span class="tag no">不建議</span></td><td>莊家優勢 16.7%，全場最高</td></tr>
-      <tr><td>硬路、單把押注</td><td><span class="tag no">不建議</span></td><td>莊家優勢 9–16%</td></tr>
+      <tr><td>硬路、單擲押注（Proposition）</td><td><span class="tag no">不建議</span></td><td>莊家優勢 9–16%</td></tr>
     </table></div>
   </div>
 
   <div class="card">
-    <h2>建議下法（單位 100）</h2>
+    <h2>建議策略（單位 100）</h2>
     <div class="scroll"><table class="tbl">
       <tr><th>階段</th><th>動作</th></tr>
-      <tr><td>開始前</td><td>Pass 100</td></tr>
-      <tr><td>點數出現</td><td>賠率注 200（2 倍）；放注 6、8 各 120，與點數相同的不放</td></tr>
-      <tr><td>放注中獎</td><td>收彩金或中一次全收</td></tr>
-      <tr><td>點數中</td><td>Pass 與賠率注派彩，回到開始前</td></tr>
-      <tr><td>七出</td><td>全數輸掉，回到開始前</td></tr>
+      <tr><td>開局擲</td><td>Pass Line 100</td></tr>
+      <tr><td>點數建立</td><td>賠率注 200（2 倍）；放注 6、8 各 120，點數同號不下注</td></tr>
+      <tr><td>放注中獎</td><td>收彩續押或中獎撤注</td></tr>
+      <tr><td>點數擲出</td><td>Pass Line 與賠率注派彩，回到開局擲</td></tr>
+      <tr><td>七出</td><td>全數輸掉，回到開局擲</td></tr>
     </table></div>
   </div>
 
   <div class="card">
-    <h2>三種收法</h2>
+    <h2>三種收注方式</h2>
     <div class="scroll"><table class="tbl">
-      <tr><th>收法</th><th>放注中獎時</th></tr>
-      <tr><td><span class="dot" style="background:var(--s1)"></span> <b>收彩金</b></td><td>彩金收回，本金留在桌上</td></tr>
-      <tr><td><span class="dot" style="background:var(--s2)"></span> <b>中一次全收</b></td><td>彩金與本金一起收回，下一個點數再放</td></tr>
-      <tr><td><span class="dot" style="background:var(--s3)"></span> <b>一路不收</b></td><td>彩金全數加碼到同一個數字</td></tr>
+      <tr><th>收注方式</th><th>放注中獎時</th></tr>
+      <tr><td><span class="dot" style="background:var(--s1)"></span> <b>收彩續押</b></td><td>彩金收回，本金續押（Collect）</td></tr>
+      <tr><td><span class="dot" style="background:var(--s2)"></span> <b>中獎撤注</b></td><td>中獎即連本帶彩撤回，下一個點數再下注（Take Down）</td></tr>
+      <tr><td><span class="dot" style="background:var(--s3)"></span> <b>全額滾注</b></td><td>彩金全數滾入同一號碼（Parlay）</td></tr>
     </table></div>
   </div>
 </section>
@@ -452,9 +457,9 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } cat
 
 const $ = s => document.querySelector(s);
 const MODES = [
-  {k:"collect", name:"收彩金",     c:"var(--s1)"},
-  {k:"down",    name:"中一次全收", c:"var(--s2)"},
-  {k:"ride",    name:"一路不收",   c:"var(--s3)"},
+  {k:"collect", name:"收彩續押",     c:"var(--s1)"},
+  {k:"down",    name:"中獎撤注", c:"var(--s2)"},
+  {k:"ride",    name:"全額滾注",   c:"var(--s3)"},
 ];
 // 輸入一律 NFKC：全形數字「１２０」看起來一樣但 parseInt 讀不到
 const nfkc = s => String(s || "").normalize("NFKC");
@@ -477,6 +482,12 @@ function play(rolls, c, mode, quiet) {
   for (const s of rolls) {
     const com = quiet ? null : [], pl = quiet ? null : [];
     const wasPoint = point;
+    // c.no7：點數建立後擲出的 7 不算（排除七出），擲次位置不變
+    if (c.no7 && point && s === 7) {
+      let net = pocket + pass + odds; for (const k in place) net += place[k];
+      out && out.push({s, wasPoint, com:["排除"], pl:[], net, pre:{pass, odds, place:Object.assign({}, place), point, ins:0}, hit:{place:{}}});
+      continue;
+    }
     if (!point && !pass) { pass = c.pass; pocket -= pass; }
     const hit = quiet ? null : {place:{}};
     const pre = quiet ? null : {pass, odds, place:Object.assign({}, place), point, ins:(c.insAmt && ((c.ins === "craps" && !point) || (c.ins === "seven" && point))) ? c.insAmt : 0};
@@ -496,7 +507,7 @@ function play(rolls, c, mode, quiet) {
           if (c.skip && n === s) { if (place[n]) { pocket += place[n]; delete place[n]; } continue; }
           if (!place[n]) { place[n] = unitAmt(n, c.place); pocket -= place[n]; put.push(n); }
         }
-        if (pl && put.length) pl.push("放 " + put.join("、"));
+        if (pl && put.length) pl.push("下注 " + put.join("、"));
       }
     } else {
       if (c.ins === "seven" && c.insAmt) {
@@ -515,10 +526,10 @@ function play(rolls, c, mode, quiet) {
           const bet = place[s], win = Math.floor(bet * PLACE_PAY[s]);
           if (hit) hit.place[s] = win;
           if (mode === "collect") { pocket += win; pl && pl.push(s + " 中 " + fmt(win)); }
-          else if (mode === "down") { pocket += win + bet; delete place[s]; pl && pl.push(s + " 中 " + fmt(win) + "・收回"); }
+          else if (mode === "down") { pocket += win + bet; delete place[s]; pl && pl.push(s + " 中 " + fmt(win) + "・撤注"); }
           else {
             const tot = bet + win, nb = Math.floor(tot / PLACE_UNIT[s]) * PLACE_UNIT[s];
-            pocket += tot - nb; place[s] = nb; pl && pl.push(s + " 中 " + fmt(win) + "・加碼至 " + nb.toLocaleString("en-US"));
+            pocket += tot - nb; place[s] = nb; pl && pl.push(s + " 中 " + fmt(win) + "・滾注至 " + nb.toLocaleString("en-US"));
           }
         }
         if (s === point) {
@@ -561,13 +572,21 @@ function render() {
   const c = settings();
   const rolls = cfg.rolls || [];
   const sums = rolls.map(r => r[0] + r[1]);
-  $("#resTitle").textContent = sums.length + " 把結果";
+  $("#resTitle").textContent = sums.length + " 擲結果";
   const res = MODES.map(m => play(sums, c, m.k, false));
 
   $("#tiles").innerHTML = MODES.map((m, i) => `<div class="tile"><div class="nm"><span class="dot" style="background:${m.c}"></span>${m.name}</div>
     <div class="big num ${cls(res[i].net)}">${fmt(res[i].net)}</div>
-    <div class="sub num"><span style="white-space:nowrap">最高 ${fmt(res[i].hi)}</span>　<span style="white-space:nowrap">最低 ${fmt(res[i].lo)}</span></div></div>`).join("");
+    <div class="sub num"><span style="white-space:nowrap">最高點 ${fmt(res[i].hi)}</span>　<span style="white-space:nowrap">最低點 ${fmt(res[i].lo)}</span></div></div>`).join("");
 
+  const so = res[0].steps.filter(x => x.wasPoint && x.s === 7).length;
+  const nres = MODES.map(m => play(sums, Object.assign({}, c, {no7:true}), m.k, true));
+  const pm = play(sums, Object.assign({}, c, {no7:true}), "collect", false).steps.filter(x => x.wasPoint).length;
+  const p7 = Math.pow(5 / 6, pm) * 100;
+  $("#nos").innerHTML = `<div class="nosh"><b>排除七出</b><span class="num">七出 ${so} 次・點數期間 ${pm} 擲皆不出 7 的機率 ${p7 < 0.1 ? p7.toFixed(3) : p7.toFixed(1)}%</span></div>
+    <div class="tiles">${MODES.map((m, i) => `<div class="tile"><div class="nm"><span class="dot" style="background:${m.c}"></span>${m.name}</div>
+    <div class="big num ${cls(nres[i].net)}">${fmt(nres[i].net)}</div>
+    <div class="sub num"><span style="white-space:nowrap">實際 ${fmt(res[i].net)}</span>　<span style="white-space:nowrap">差額 ${fmt(nres[i].net - res[i].net)}</span></div></div>`).join("")}</div>`;
   $("#legend").innerHTML = MODES.map(m => `<span><i class="dot" style="background:${m.c}"></i>${m.name}</span>`).join("");
   drawChart(res, sums);
 
@@ -576,7 +595,7 @@ function render() {
   $("#rolls").innerHTML = rolls.map((r, j) => {
     const st = res[0].steps[j];
     const seven = st.wasPoint && st.s === 7;
-    const ph = st.wasPoint ? `<span class="ph on">點數 ${st.wasPoint}</span>` : `<span class="ph">出場</span>`;
+    const ph = st.wasPoint ? `<span class="ph on">點數 ${st.wasPoint}</span>` : `<span class="ph">開局</span>`;
     return `<div class="roll${seven ? " seven" : ""}${j + 1 === cfg.cur ? " cur" : ""}" data-j="${j + 1}">
       <div class="i num">${j + 1}</div>
       <div class="dice">${die(r[0])}${die(r[1])}<span class="sum num">${st.s}</span></div>
@@ -605,7 +624,7 @@ function drawTable() {
     return `<button class="${cl}" data-n="${x}" aria-pressed="${sel.has(x)}"><span class="n">${x}</span><span class="pay">${PAYTXT[x]}</span><span class="slot">${pre.point === x ? '<span class="puck">ON</span>' : ""}${pre.place[x] ? chip(pre.place[x], pre.point ? "" : "off") : ""}</span>${rb(h)}</button>`;
   }).join("");
   const seven = pre.point && st.s === 7;
-  const state = pre.point ? `點數 ${pre.point}` : `<span class="puck offp">OFF</span>出場擲`;
+  const state = pre.point ? `點數 ${pre.point}` : `<span class="puck offp">OFF</span>開局擲`;
   const dz = $("#tDice");
   dz.innerHTML = `<div class="dd">${die(r[0])}${die(r[1])}<span class="tot num">${st.s}</span></div><div class="st${seven ? " seven" : ""}">${seven ? "七出" : state}</div>`;
   dz.classList.remove("shake"); void dz.offsetWidth; if (timer) dz.classList.add("shake");
@@ -623,7 +642,7 @@ function drawTable() {
   pl.querySelector(".slot").innerHTML = (pre.pass ? chip(pre.pass) : "") + (pre.odds ? chip(pre.odds, "odds") : "");
   pl.querySelectorAll(".rb").forEach(e => e.remove()); pl.insertAdjacentHTML("beforeend", rb((ph || 0) + (oh || 0)));
   const m = MODES[vi];
-  $("#tInfo").innerHTML = `<div class="row1"><span class="k num">第 ${cfg.cur}／${n} 把</span><span class="net num ${cls(st.net)}">${fmt(st.net)}</span></div><div class="ev">${st.com.concat(st.pl).join("　")}</div>`;
+  $("#tInfo").innerHTML = `<div class="row1"><span class="k num">第 ${cfg.cur}／${n} 擲</span><span class="net num ${cls(st.net)}">${fmt(st.net)}</span></div><div class="ev">${st.com.concat(st.pl).join("　")}</div>`;
   const rg = $("#tRange"); rg.max = n; rg.value = cfg.cur;
   $("#tPrev").disabled = cfg.cur <= 1; $("#tNext").disabled = cfg.cur >= n;
   $("#tPlay").textContent = timer ? "暫停" : "播放";
@@ -708,7 +727,7 @@ function drawChart(res, sums) {
     const cr = $("#cross"); cr.setAttribute("x1", cx); cr.setAttribute("x2", cx); cr.setAttribute("visibility", "visible");
     svg.querySelectorAll(".hm").forEach((c, k) => { c.setAttribute("cx", cx); c.setAttribute("cy", y(series[k][i])); c.setAttribute("visibility", "visible"); });
     const tip = $("#tip");
-    tip.innerHTML = `<b>${i ? "第 " + i + " 把・" + sums[i - 1] : "開始"}</b>` + MODES.map((m, k) => `<div><span><i class="dot" style="background:${m.c}"></i>${m.name}</span><span class="num ${cls(series[k][i])}">${fmt(series[k][i])}</span></div>`).join("");
+    tip.innerHTML = `<b>${i ? "第 " + i + " 擲・" + sums[i - 1] : "起始"}</b>` + MODES.map((m, k) => `<div><span><i class="dot" style="background:${m.c}"></i>${m.name}</span><span class="num ${cls(series[k][i])}">${fmt(series[k][i])}</span></div>`).join("");
     tip.hidden = false;
     const bx = $("#chartbox").getBoundingClientRect(), left = ev.clientX - bx.left;
     const tw = tip.offsetWidth;
@@ -736,9 +755,9 @@ function syncUI() {
   $("#insAmtF").hidden = cfg.ins === "none";
   $("#nF").hidden = cfg.src === "manual"; $("#manF").hidden = cfg.src !== "manual";
   $("#go").textContent = cfg.src === "manual" ? "計算" : "擲骰";
-  $("#cfgSum").textContent = `Pass ${settings().pass}・${cfg.odds === "0" ? "無賠率注" : "賠率 " + cfg.odds + " 倍"}・放 ${cfg.nums.slice().sort((a, b) => a - b).join("、") || "無"}・${cfg.ins === "none" ? "無保險" : cfg.ins === "craps" ? "Any Craps" : "Any 7"}`;
+  $("#cfgSum").textContent = `Pass ${settings().pass}・${cfg.odds === "0" ? "無賠率注" : "賠率注 " + cfg.odds + " 倍"}・放注 ${cfg.nums.slice().sort((a, b) => a - b).join("、") || "無"}・${cfg.ins === "none" ? "無保險注" : cfg.ins === "craps" ? "Any Craps" : "Any 7"}`;
   const c = settings();
-  $("#longCfg").textContent = `每場 ${toInt(cfg.n, 20)} 把・Pass ${c.pass}・賠率注 ${c.odds ? c.odds + " 倍" : "不下"}・放注 ${c.nums.join("、") || "無"}・保險 ${c.ins === "none" ? "不買" : (c.ins === "craps" ? "Any Craps " : "Any 7 ") + c.insAmt}`;
+  $("#longCfg").textContent = `每場 ${toInt(cfg.n, 20)} 擲・Pass ${c.pass}・賠率注 ${c.odds ? c.odds + " 倍" : "不下"}・放注 ${c.nums.join("、") || "無"}・保險注 ${c.ins === "none" ? "無" : (c.ins === "craps" ? "Any Craps " : "Any 7 ") + c.insAmt}`;
 }
 document.querySelectorAll(".seg[data-k]").forEach(seg => seg.addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
@@ -787,7 +806,7 @@ $("#goLong").addEventListener("click", () => {
   btn.disabled = true;
   const c = settings(), N = +cfg.runs, per = Math.min(500, Math.max(1, toInt(cfg.n, 20)));
   const variants = [{label:"目前設定", c}];
-  if (c.ins !== "none") variants.push({label:"不買保險", c:Object.assign({}, c, {ins:"none"})});
+  if (c.ins !== "none") variants.push({label:"無保險注", c:Object.assign({}, c, {ins:"none"})});
   const acc = variants.map(() => MODES.map(() => new Float64Array(N)));
   const prog = $("#prog"), bar = prog.querySelector("i"); prog.hidden = false;
   let done = 0;
@@ -801,7 +820,7 @@ $("#goLong").addEventListener("click", () => {
     bar.style.width = (done / N * 100) + "%";
     btn.textContent = "計算中 " + Math.floor(done / N * 100) + "%";
     if (done < N) return setTimeout(chunk, 0);
-    $("#longOut").innerHTML = variants.map((v, a) => `<div class="card"><h2>${v.label}・${N.toLocaleString("en-US")} 場 × ${per} 把</h2><div class="tiles">${MODES.map((m, k) => {
+    $("#longOut").innerHTML = variants.map((v, a) => `<div class="card"><h2>${v.label}・${N.toLocaleString("en-US")} 場 × ${per} 擲</h2><div class="tiles">${MODES.map((m, k) => {
       const arr = acc[a][k].slice().sort();
       let sum = 0, win = 0; for (const x of arr) { sum += x; if (x > 0) win++; }
       const avg = sum / N;
